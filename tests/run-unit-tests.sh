@@ -13,4 +13,7 @@ swiftc Modules/Kimai/Sources/Core/HomeState.swift tests/today/home-state.swift -
 swiftc Components/Report/Domain/ReportChartData.swift tests/report/chart-data.swift -o "$build_dir/chart-data"
 "$build_dir/chart-data"
 
+swiftc Components/Report/Domain/ReportTimelineLayout.swift tests/report/timeline-layout.swift -o "$build_dir/timeline-layout"
+"$build_dir/timeline-layout"
+
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/ui -p '*test.py'

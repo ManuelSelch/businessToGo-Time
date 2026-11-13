@@ -205,9 +205,9 @@ extension ReportsView {
     func getBody(timesheets: [KimaiTimesheet]) -> some View {
         switch(selectedReportType) {
         case .day:
-            getTimesheets(timesheets: timesheets)
+            ReportDayTimeline(timesheets: timesheets, projects: projects, customers: customers, activities: activities, timesheetChanges: timesheetChanges, edit: editTapped, delete: deleteTapped)
         case .week:
-            getTimesheets(timesheets: timesheets)
+            ReportWeekEntries(timesheets: timesheets, projects: projects, customers: customers, activities: activities, timesheetChanges: timesheetChanges, edit: editTapped, delete: deleteTapped)
         case .month, .year:
             if timesheets.isEmpty {
                 VStack(spacing: 8) {
@@ -227,35 +227,23 @@ extension ReportsView {
         let groupedData = viewModel.groupRecords(records: timesheets, projects: projects, customers: customers)
         return List {
             ForEach(Array(groupedData.keys), id: \.id) { customer in
-                Section(
-                    content: {
-                        if let projects = groupedData[customer] {
-                            ForEach(Array(projects.keys), id: \.id) { project in
-                                HStack {
-                                    Text(project.name)
-                                    Spacer()
-                                    
-                                    Text(
-                                        MyFormatter.duration(projects[project] ?? 0.0)
-                                    )
-                                      
-                                }
+                DisclosureGroup {
+                    if let projects = groupedData[customer] {
+                        ForEach(Array(projects.keys).sorted { $0.name < $1.name }, id: \.id) { project in
+                            HStack {
+                                Text(project.name)
+                                Spacer()
+                                Text(MyFormatter.duration(projects[project] ?? 0))
                             }
-                        } else {
-                            Text("No projects available.")
                         }
-                    },
-                    header: {
-                        HStack {
-                            Text(customer.name)
-                            Spacer()
-                            Text(MyFormatter.duration(groupedData[customer]?.values.reduce(0, +) ?? 0))
-                        }
-                        .font(.system(size: 15))
-                        .textCase(.uppercase)
-                        .foregroundStyle(Color.textHeaderSecondary)
                     }
-                )
+                } label: {
+                    HStack {
+                        Text(customer.name)
+                        Spacer()
+                        Text(MyFormatter.duration(groupedData[customer]?.values.reduce(0, +) ?? 0))
+                    }
+                }
                 .listRowBackground(Color.clear)
             }
         }
@@ -297,9 +285,7 @@ extension ReportsView {
             case .week, .month, .year:
                 ReportBarChart(buckets: result.chartBuckets)
             case .day:
-                ChartPieView(customers.map { .init(id: $0.id, name: $0.name, value: 10) })
-                    .chartLegend(.hidden)
-                    .frame(height: 100)
+                EmptyView()
             }
         }
         .padding(.horizontal, 14)
