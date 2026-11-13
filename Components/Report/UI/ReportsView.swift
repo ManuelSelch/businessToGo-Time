@@ -218,17 +218,25 @@ private struct ReportBarChart: View {
             .accessibilityValue("\(bucket.hours.formatted()) Stunden")
         }
         .chartXScale(domain: buckets.map(\.chartKey))
-        .chartXAxis {
-            AxisMarks(preset: .aligned, values: buckets.map(\.chartKey)) { value in
-                AxisValueLabel(centered: false) {
-                    if let key = value.as(String.self), let index = Int(key), buckets.indices.contains(index) {
-                        Text(buckets[index].label)
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .chartOverlay { proxy in
+            GeometryReader { geometry in
+                let plot = geometry[proxy.plotAreaFrame]
+                ForEach(buckets) { bucket in
+                    if let x = proxy.position(forX: bucket.chartKey) {
+                        Text(bucket.label)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .fixedSize()
+                            .position(x: plot.minX + x, y: plot.maxY + 10)
+                            .accessibilityHidden(true)
                     }
                 }
             }
         }
-        .chartYAxis(.hidden)
-        .frame(height: 100)
+        .frame(height: 80)
+        .padding(.bottom, 20)
     }
 }
 
