@@ -58,7 +58,7 @@ struct ReportsView: View {
         case .day:
             return timesheets.filter{ $0.getBeginDate()?.isDay(of: selectedDate) ?? false }
         case .week:
-            return timesheets.filter { $0.getBeginDate()?.isWeekOfYear(of: selectedDate) ?? false }
+            return timesheets.filter { $0.getBeginDate()?.isInMondayWeek(of: selectedDate) ?? false }
         case .month:
             return timesheets.filter { $0.getBeginDate()?.isMonth(of: selectedDate) ?? false }
         case .year:
@@ -155,14 +155,24 @@ extension ReportsView {
     @ViewBuilder
     func getTimesheets() -> some View {
        
-        KimaiTimesheetsListView(
-            projects: projects,
-            timesheets: timesheetsFiltered,
-            activities: activities,
-            timesheetChanges: timesheetChanges,
-            deleteTapped: deleteTapped,
-            editTapped: editTapped
-        )
+        if selectedReportType == .week && timesheetsFiltered.isEmpty {
+            VStack(spacing: 8) {
+                Image(systemName: "calendar")
+                    .font(.title2)
+                Text("Keine Zeiteinträge für diese Woche")
+            }
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            KimaiTimesheetsListView(
+                projects: projects,
+                timesheets: timesheetsFiltered,
+                activities: activities,
+                timesheetChanges: timesheetChanges,
+                deleteTapped: deleteTapped,
+                editTapped: editTapped
+            )
+        }
          
     }
     

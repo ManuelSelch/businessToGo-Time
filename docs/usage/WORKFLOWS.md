@@ -27,7 +27,7 @@
 
 ## Reports
 
-- Reports provides day/week/month/year and project selection, calendar navigation, entry editing/deletion, totals and charts.
+- Reports provides day/week/month/year and project selection, calendar navigation, entry editing/deletion, totals and charts. In week view, arrows move by one week; the date range opens a calendar for selecting a Monday–Sunday week or returning to this week. The chart and entries use the selected week and project filter.
 - Day/week lists and totals use filtered timesheets. Month/year grouped rows currently use an unfiltered, appearance-time snapshot; non-week pie values are placeholders.
 - Do not use these unverified reports for billing without comparing server data. Open-ended records use the current time when calculating duration.
 

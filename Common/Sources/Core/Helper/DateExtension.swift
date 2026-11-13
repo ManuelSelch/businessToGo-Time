@@ -26,6 +26,16 @@ public extension Date {
         return calendar.dateComponents([.calendar, .yearForWeekOfYear, .weekOfYear], from: self).date!
     }
     
+    func mondayWeekStart(calendar: Calendar = .current) -> Date {
+        let day = calendar.startOfDay(for: self)
+        let offset = (calendar.component(.weekday, from: day) + 5) % 7
+        return calendar.date(byAdding: .day, value: -offset, to: day) ?? day
+    }
+
+    func isInMondayWeek(of date: Date, calendar: Calendar = .current) -> Bool {
+        mondayWeekStart(calendar: calendar) == date.mondayWeekStart(calendar: calendar)
+    }
+
     func addDays(_ days: Int) -> Date {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: self)
