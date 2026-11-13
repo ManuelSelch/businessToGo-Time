@@ -10,15 +10,17 @@ Run the Pi `report-benchmark` suite, or:
 
 ```sh
 xcodebuild test -project businessToGo.xcodeproj -scheme businessToGo \
-  -configuration Release -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17' \
   -only-testing:businessToGoTests/ReportsPerformanceTests \
   -parallel-testing-enabled NO -enableCodeCoverage NO \
   CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES
 ```
 
-XCTest repeats chart preparation ten times and reports the average and variation in its test results. Keep the same destination, time zone, toolchain and build settings for comparisons; set an Xcode performance baseline after a successful run. This measures chart-value/view construction, including repeated filtering and date parsing—not SwiftUI layout, drawing, scrolling, list grouping or full-report latency. It is not a speedup claim or a hard timing threshold.
+XCTest repeats chart preparation and reports the average and variation in its test results (five recorded samples in the baseline run). Keep the same destination, time zone, toolchain and build settings for comparisons; set an Xcode performance baseline after a successful run. This measures chart-value/view construction, including repeated filtering and date parsing—not SwiftUI layout, drawing, scrolling, list grouping or full-report latency. It is not a speedup claim or a hard timing threshold.
 
-**Execution status (2026-11-13):** the Release pipeline was attempted with and without code coverage. Both builds failed before test execution while linking the pinned ReduxDebug product: unresolved `SwiftUIIntrospect.IntrospectModifier` / `NavigationViewWithStackStyleType` symbols. No timing baseline or passing calculation assertion has been recorded. Dependency repair is outside this benchmark-only change; report behavior remains unchanged.
+**Debug baseline (2026-11-13):** the `report-benchmark` pipeline passed both tests on iPhone 17 Simulator, iOS 26.1 / Xcode 26.1.1, with coverage disabled. Weekly chart preparation averaged **1.176 seconds**, relative standard deviation **0.389%**, with samples `[1.174667, 1.182843, 1.169003, 1.176143, 1.178728]` seconds. The calculation assertions passed. Compare future runs using the same Debug configuration; these unoptimized simulator timings do not represent Release performance on a phone. Xcode emitted duplicate Pulse class warnings; these remain unresolved. The result bundle is in the local DerivedData `businessToGo-eerqspkpeedwbphciljmluxlhhye/Logs/Test/Test-businessToGo-2026.11.13_20-32-16-+0100.xcresult` (not a durable repository artifact).
+
+The Release pipeline was attempted with and without code coverage. Both builds failed before test execution while linking the pinned ReduxDebug product: unresolved `SwiftUIIntrospect.IntrospectModifier` / `NavigationViewWithStackStyleType` symbols. Dependency repair is outside this benchmark-only change; report behavior and the Release phone-install script remain unchanged.
 
 ## Suite boundaries
 
