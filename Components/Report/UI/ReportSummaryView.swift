@@ -4,11 +4,16 @@ import KimaiCore
 
 struct ReportSummaryView: View {
     let timesheets: [KimaiTimesheet]
+    var cachedTotals: (duration: TimeInterval, rate: Double)? = nil
     
     var totalTime: String {
         var time: TimeInterval = 0
-        for timesheet in timesheets {
-            time += timesheet.calculateDuration() ?? 0
+        if let cachedTotals = cachedTotals {
+            time = cachedTotals.duration
+        } else {
+            for timesheet in timesheets {
+                time += timesheet.calculateDuration() ?? 0
+            }
         }
         
         let formatter = DateComponentsFormatter()
@@ -18,8 +23,12 @@ struct ReportSummaryView: View {
     
     var totalRate: String {
         var rate: Double = 0
-        for timesheet in timesheets {
-            rate += timesheet.rate
+        if let cachedTotals = cachedTotals {
+            rate = cachedTotals.rate
+        } else {
+            for timesheet in timesheets {
+                rate += timesheet.rate
+            }
         }
         return String(format: "%.02f€", rate)
     }

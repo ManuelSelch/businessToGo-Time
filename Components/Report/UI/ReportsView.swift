@@ -8,7 +8,118 @@ import CommonUI
 import KimaiCore
 import KimaiUI
 
+struct ReportTimesheet {
+    let timesheet: KimaiTimesheet
+    let beginDate: Date?
+}
+
+struct ReportResult {
+    let timesheets: [KimaiTimesheet]
+    let totalDuration: TimeInterval
+    let totalRate: Double
+    let weeklyTotals: [TimeInterval]
+    let chartBuckets: [ReportChartBucket]
+    let hasRunningEntries: Bool
+}
+
+private struct ReportSelection: Equatable {
+    let date: Date
+    let project: Int?
+    let type: ReportType
+    let calendar: Calendar
+}
+
+private struct CachedReport {
+    let selection: ReportSelection
+    let timesheets: [KimaiTimesheet]
+    let totalDuration: TimeInterval
+    let totalRate: Double
+    let weekdayDurations: [TimeInterval]
+    let chartBuckets: [ReportChartBucket]
+    let running: [(begin: Date, weekday: Int?)]
+}
+
 class ReportViewModel: ObservableObject {
+    private var cachedReport: CachedReport?
+    private var cachedTimesheets: [KimaiTimesheet]?
+    private var cachedTimeZone: TimeZone?
+    private var preparedTimesheets: [ReportTimesheet] = []
+
+    func prepareTimesheets(_ timesheets: [KimaiTimesheet]) -> [ReportTimesheet] {
+        let timeZone = TimeZone.current
+        if cachedTimesheets != timesheets || cachedTimeZone != timeZone {
+            cachedReport = nil
+            preparedTimesheets = timesheets.map { ReportTimesheet(timesheet: $0, beginDate: $0.getBeginDate()) }
+            cachedTimesheets = timesheets
+            cachedTimeZone = timeZone
+        }
+        return preparedTimesheets
+    }
+
+    func reportResult(records: [KimaiTimesheet], date: Date, project: Int?, type: ReportType, now: Date = .now) -> ReportResult {
+        let prepared = prepareTimesheets(records)
+        let selection = ReportSelection(date: date, project: project, type: type, calendar: .current)
+        if cachedReport?.selection != selection {
+            var selected: [KimaiTimesheet] = []
+            var duration: TimeInterval = 0
+            var rate: Double = 0
+            var weekdays = Array(repeating: TimeInterval.zero, count: 8)
+            var running: [(begin: Date, weekday: Int?)] = []
+            var chartEntries: [ReportChartEntry] = []
+            for entry in prepared {
+                if let project = project, entry.timesheet.project != project { continue }
+                guard let begin = entry.beginDate else { continue }
+                let matches: Bool
+                switch type {
+                case .day: matches = begin.isDay(of: date)
+                case .week: matches = begin.isInMondayWeek(of: date)
+                case .month: matches = begin.isMonth(of: date)
+                case .year: matches = begin.isYear(of: date)
+                }
+                if !matches { continue }
+                selected.append(entry.timesheet)
+                rate += entry.timesheet.rate
+                let weekday = begin.getWeekday().flatMap { (1...7).contains($0) ? $0 : nil }
+                if let end = entry.timesheet.getEndDate() {
+                    let seconds = end.timeIntervalSince(begin)
+                    duration += seconds
+                    chartEntries.append(ReportChartEntry(date: begin, hours: seconds / 3600))
+                    if let weekday = weekday { weekdays[weekday] += seconds }
+                } else {
+                    // Missing and unparseable end dates both use the current time in calculateDuration().
+                    running.append((begin, weekday))
+                }
+            }
+            let chartPeriod: ReportChartPeriod?
+            switch type {
+            case .day: chartPeriod = nil
+            case .week: chartPeriod = .week
+            case .month: chartPeriod = .month
+            case .year: chartPeriod = .year
+            }
+            let buckets = chartPeriod.map { ReportChartData.buckets(period: $0, selectedDate: date, entries: chartEntries) } ?? []
+            cachedReport = CachedReport(selection: selection, timesheets: selected, totalDuration: duration, totalRate: rate, weekdayDurations: weekdays, chartBuckets: buckets, running: running)
+        }
+        let cached = cachedReport!
+        var duration = cached.totalDuration
+        var weekdays = cached.weekdayDurations
+        for entry in cached.running {
+            let seconds = now.timeIntervalSince(entry.begin)
+            duration += seconds
+            if let weekday = entry.weekday { weekdays[weekday] += seconds }
+        }
+        var buckets = cached.chartBuckets
+        if !cached.running.isEmpty, !buckets.isEmpty {
+            let period: ReportChartPeriod = type == .week ? .week : (type == .month ? .month : .year)
+            let runningEntries = cached.running.map { ReportChartEntry(date: $0.begin, hours: now.timeIntervalSince($0.begin) / 3600) }
+            let runningBuckets = ReportChartData.buckets(period: period, selectedDate: date, entries: runningEntries)
+            buckets = zip(buckets, runningBuckets).map { bucket, running in
+                ReportChartBucket(id: bucket.id, label: bucket.label, accessibilityLabel: bucket.accessibilityLabel, hours: bucket.hours + running.hours)
+            }
+        }
+        return ReportResult(timesheets: cached.timesheets, totalDuration: duration, totalRate: cached.totalRate, weeklyTotals: weekdays.map { $0 / 3600 }, chartBuckets: buckets, hasRunningEntries: !cached.running.isEmpty)
+    }
+
     @Published var groupedData: [KimaiCustomer: [KimaiProject: Double]] = [:] // Customer -> Project -> Total Hours
 
     func processRecords(records: [KimaiTimesheet], projects: [KimaiProject], customers: [KimaiCustomer]) {
@@ -49,31 +160,22 @@ struct ReportsView: View {
     
     
     // MARK: - View
-    var timesheetsFiltered: [KimaiTimesheet] {
-        var timesheets = timesheets
-        
-        if let project = selectedProject {
-            timesheets = timesheets.filter { $0.project == project }
-        }
-        
-        switch(selectedReportType){
-        case .day:
-            return timesheets.filter{ $0.getBeginDate()?.isDay(of: selectedDate) ?? false }
-        case .week:
-            return timesheets.filter { $0.getBeginDate()?.isInMondayWeek(of: selectedDate) ?? false }
-        case .month:
-            return timesheets.filter { $0.getBeginDate()?.isMonth(of: selectedDate) ?? false }
-        case .year:
-            return timesheets.filter { $0.getBeginDate()?.isYear(of: selectedDate) ?? false }
-        }
+    func reportResult(using viewModel: ReportViewModel, now: Date = .now) -> ReportResult {
+        viewModel.reportResult(records: timesheets, date: selectedDate, project: selectedProject, type: selectedReportType, now: now)
     }
-    
-    
+
     var body: some View {
-        VStack(spacing: 0){
+        let result = reportResult(using: viewModel)
+        return VStack(spacing: 0){
             getHeader()
-            getReportChart()
-            getBody()
+            if result.hasRunningEntries {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    getReportChart(result: reportResult(using: viewModel, now: context.date))
+                }
+            } else {
+                getReportChart(result: result)
+            }
+            getBody(timesheets: result.timesheets)
         }
         .scrollContentBackground(.hidden)
         .onAppear {
@@ -100,12 +202,12 @@ extension ReportsView {
     }
     
     @ViewBuilder
-    func getBody() -> some View {
+    func getBody(timesheets: [KimaiTimesheet]) -> some View {
         switch(selectedReportType) {
         case .day:
-            getTimesheets()
+            getTimesheets(timesheets: timesheets)
         case .week:
-            getTimesheets()
+            getTimesheets(timesheets: timesheets)
         case .month:
             getSummary()
         case .year:
@@ -155,9 +257,9 @@ extension ReportsView {
     
     
     @ViewBuilder
-    func getTimesheets() -> some View {
+    func getTimesheets(timesheets: [KimaiTimesheet]) -> some View {
        
-        if selectedReportType == .week && timesheetsFiltered.isEmpty {
+        if selectedReportType == .week && timesheets.isEmpty {
             VStack(spacing: 8) {
                 Image(systemName: "calendar")
                     .font(.title2)
@@ -168,7 +270,7 @@ extension ReportsView {
         } else {
             KimaiTimesheetsListView(
                 projects: projects,
-                timesheets: timesheetsFiltered,
+                timesheets: timesheets,
                 activities: activities,
                 timesheetChanges: timesheetChanges,
                 deleteTapped: deleteTapped,
@@ -179,17 +281,13 @@ extension ReportsView {
     }
     
     @ViewBuilder
-    func getReportChart() -> some View {
+    func getReportChart(result: ReportResult) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            ReportSummaryView(timesheets: timesheetsFiltered)
+            ReportSummaryView(timesheets: result.timesheets, cachedTotals: (result.totalDuration, result.totalRate))
 
             switch selectedReportType {
-            case .week:
-                reportBarChart(period: .week)
-            case .month:
-                reportBarChart(period: .month)
-            case .year:
-                reportBarChart(period: .year)
+            case .week, .month, .year:
+                ReportBarChart(buckets: result.chartBuckets)
             case .day:
                 ChartPieView(customers.map { .init(id: $0.id, name: $0.name, value: 10) })
                     .chartLegend(.hidden)
@@ -237,15 +335,5 @@ private struct ReportBarChart: View {
         }
         .frame(height: 80)
         .padding(.bottom, 20)
-    }
-}
-
-extension ReportsView {
-    private func reportBarChart(period: ReportChartPeriod) -> some View {
-        let entries = timesheetsFiltered.compactMap { timesheet -> ReportChartEntry? in
-            guard let date = timesheet.getBeginDate() else { return nil }
-            return ReportChartEntry(date: date, hours: (timesheet.calculateDuration() ?? 0) / 3600)
-        }
-        return ReportBarChart(buckets: ReportChartData.buckets(period: period, selectedDate: selectedDate, entries: entries))
     }
 }

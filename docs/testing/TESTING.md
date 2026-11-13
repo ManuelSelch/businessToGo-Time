@@ -2,6 +2,34 @@
 
 Reviewed at `de9e71e`, 2026-10-25. This is the **S5 allocation/design deliverable**, not an implemented test harness. See [proposed design](../app-review/DESIGN.md) for approval gates and [baseline](../app-review/BASELINE.md) for actual command results. No test execution passed in that review: app test build and the Common host test build failed before execution. After Boarding removal, the app's generic simulator build-for-testing succeeded; tests were not executed.
 
+## Weekly report benchmark
+
+[ReportsPerformanceTests](../../businessToGoTests/Report/UI/ReportsPerformanceTests.swift) adds a focused calculation check and XCTest wall-clock benchmark for the current production report selection and `ReportsView.getReportChart(timesheets:)` path. It uses 10,000 synthetic, closed one-hour entries over 100 days: the selected Monday–Sunday week contains 700 entries and 100 hours per weekday. Fixture generation is outside the measured block; no storage, accounts or server are used.
+
+Run the Pi `report-benchmark` suite, or:
+
+```sh
+xcodebuild test -project businessToGo.xcodeproj -scheme businessToGo \
+  -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -only-testing:businessToGoTests/ReportsPerformanceTests \
+  -parallel-testing-enabled NO -enableCodeCoverage NO \
+  CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES
+```
+
+XCTest measures initial parsing of all 10,000 begin dates, selection and chart preparation when switching between two weeks, and 100 repeated preparations with an unchanged report selection. Fixture creation is outside the measurements. Each metric reports five recorded samples. Keep the same destination, time zone, toolchain and build settings for comparisons. These measurements exclude SwiftUI layout, drawing, scrolling, list grouping and full-report latency; they are not hard timing thresholds.
+
+**Debug baseline (2026-11-13):** the `report-benchmark` pipeline passed both tests on iPhone 17 Simulator, iOS 26.1 / Xcode 26.1.1, with coverage disabled. Weekly chart preparation averaged **1.176 seconds**, relative standard deviation **0.389%**, with samples `[1.174667, 1.182843, 1.169003, 1.176143, 1.178728]` seconds. The calculation assertions passed. Compare future runs using the same Debug configuration; these unoptimized simulator timings do not represent Release performance on a phone. Xcode emitted duplicate Pulse class warnings; these remain unresolved. The result bundle is in the local DerivedData `businessToGo-eerqspkpeedwbphciljmluxlhhye/Logs/Test/Test-businessToGo-2026.11.13_20-32-16-+0100.xcresult` (not a durable repository artifact).
+
+**After filtering optimization (2026-11-13):** three Debug runs on the same iPhone 17 simulator averaged **0.159, 0.155, and 0.155 seconds** (five samples each), versus 1.176 seconds baseline—approximately 87% less time using the mean of the three run averages. Each run passed the calculation assertions. The timed path still includes selection filtering and chart construction, but not the full report or rendering. Duplicate Pulse class warnings remain.
+
+**After begin-date caching (2026-11-13):** three Debug runs on the same simulator averaged **0.065, 0.065, 0.063 seconds** for initial date preparation and **0.082, 0.083, 0.083 seconds** for cached week switching and chart preparation. All five tests passed in each run. The previous 0.155–0.159-second chart benchmark did not alternate weeks, so comparison is indicative rather than identical. Preparation is synchronous and its cost is additional to the first selection.
+
+`ReportsView` keeps parsed begin dates and the latest selected report in its state-owned `ReportViewModel`. Record or time-zone changes rebuild parsed dates and invalidate the report; date, project, report type or calendar changes invalidate the report. Closed-entry durations, rates, selected records and weekday totals are cached. Missing or invalid end dates use the current time, as before; while any selected entry is running, a one-second timeline refreshes the summary and chart without rebuilding the selection. List grouping and the existing month/year customer-project summary remain on their prior paths.
+
+**After report-result caching (2026-11-13):** two Debug runs passed ten tests each. Initial date parsing averaged **0.064–0.065 seconds**, the complete initial selection including parsing **0.138–0.141 seconds**, and changing weeks **0.075–0.077 seconds**. Preparing the same cached selection and chart 100 times took approximately **0.000344–0.000348 seconds** total. The cached measurement does not include rendering, and the fixture has no running entries. Initial selection and changes still incur calculation costs; the cache retains only the latest selection.
+
+The Release pipeline was attempted with and without code coverage. Both builds failed before test execution while linking the pinned ReduxDebug product: unresolved `SwiftUIIntrospect.IntrospectModifier` / `NavigationViewWithStackStyleType` symbols. Dependency repair is outside this benchmark-only change; report behavior and the Release phone-install script remain unchanged.
+
 ## Suite boundaries
 
 | Suite | Real system under test | Replaced/controlled boundary | Purpose |
