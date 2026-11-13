@@ -70,7 +70,7 @@ extension TabRoute {
 struct RouterKey: DependencyKey {
     static var liveValue: MyRouter = AppRouter(
         root: .login(.accounts),
-        tab: .management,
+        tab: .today,
         routers: [
             .today: StackRouter(root: .today(.today)),
             .management: StackRouter(root: .management(.kimai(.customersList))),
