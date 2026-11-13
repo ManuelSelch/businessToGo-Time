@@ -15,12 +15,15 @@ struct ReportComponent: ViewModel {
         
         var selectedDate: Date
         var selectedProject: Int?
+        var selectedCustomer: Int?
+        var selectedTeam: Int?
         var selectedReportType: ReportType
         
         var timesheets: [KimaiTimesheet]
         var projects: [KimaiProject]
         var activities: [KimaiActivity]
         var customers: [KimaiCustomer]
+        var teams: [KimaiTeam]
         
         var timesheetsChanges: [DatabaseChange]
         
@@ -29,12 +32,15 @@ struct ReportComponent: ViewModel {
                 months: state.report.months,
                 selectedDate: state.report.selectedDate,
                 selectedProject: state.report.selectedProject,
+                selectedCustomer: state.report.selectedCustomer,
+                selectedTeam: state.report.selectedTeam,
                 selectedReportType: state.report.selectedReportType,
                 
                 timesheets: state.kimai.timesheets,
                 projects: state.kimai.projects,
                 activities: state.kimai.activities,
                 customers: state.kimai.customers,
+                teams: state.kimai.teams,
                 
                 timesheetsChanges: state.kimai.timesheetChanges
             )
@@ -44,6 +50,7 @@ struct ReportComponent: ViewModel {
     enum Action: ViewAction {
         case dateSelected(Date)
         case projectSelected(Int?)
+        case filtersSelected(customer: Int?, project: Int?, team: Int?)
         case reportTypeSelected(ReportType)
         case reports(ReportsAction)
         case calendar(CalendarAction)
@@ -53,6 +60,7 @@ struct ReportComponent: ViewModel {
             switch self {
             case let .dateSelected(date): return .report(.dateSelected(date))
             case let .projectSelected(project): return .report(.projectSelected(project))
+            case let .filtersSelected(customer, project, team): return .report(.filtersSelected(customer: customer, project: project, team: team))
             case let .reportTypeSelected(reportType): return .report(.reportTypeSelected(reportType))
             case let .reports(action):
                 switch(action) {

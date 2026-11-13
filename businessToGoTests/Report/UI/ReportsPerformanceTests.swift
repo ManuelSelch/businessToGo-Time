@@ -141,6 +141,33 @@ final class ReportsPerformanceTests: XCTestCase {
         XCTAssertEqual(stopped.totalDuration, 3_600, accuracy: 0.001)
     }
 
+    func testCustomerAndTeamFiltersCombineAndInvalidateCache() {
+        var customer = KimaiCustomer.new
+        customer.id = 10
+        customer.teams = [7]
+        var project = KimaiProject.new
+        project.id = 0
+        project.customer = 10
+        let records = Array(report.timesheets.prefix(7))
+
+        let matching = viewModel.reportResult(records: records, date: selectedDate, project: nil, type: .week, customer: 10, team: 7, projects: [project], customers: [customer])
+        let unmatched = viewModel.reportResult(records: records, date: selectedDate, project: nil, type: .week, customer: 10, team: 8, projects: [project], customers: [customer])
+
+        XCTAssertEqual(matching.timesheets.map(\.project), [0, 0])
+        XCTAssertEqual(matching.totalDuration, 7200, accuracy: 0.001)
+        XCTAssertTrue(unmatched.timesheets.isEmpty)
+        XCTAssertEqual(unmatched.chartBuckets.reduce(0) { $0 + $1.hours }, 0)
+
+        let conflictingProject = viewModel.reportResult(records: records, date: selectedDate, project: 1, type: .week, customer: 10, team: 7, projects: [project], customers: [customer])
+        XCTAssertTrue(conflictingProject.timesheets.isEmpty)
+
+        customer.teams = [8]
+        let changedRelationship = viewModel.reportResult(records: records, date: selectedDate, project: nil, type: .week, customer: 10, team: 8, projects: [project], customers: [customer])
+        XCTAssertEqual(changedRelationship.timesheets.map(\.project), [0, 0])
+        let grouped = viewModel.groupRecords(records: changedRelationship.timesheets, projects: [project], customers: [customer])
+        XCTAssertEqual(grouped[customer]?[project] ?? 0, 7200, accuracy: 0.001)
+    }
+
     func testReportTypesMatchPreviousSelectionAndTotals() {
         let records = Array(report.timesheets.prefix(100))
         for type in [ReportType.day, .week, .month, .year] {

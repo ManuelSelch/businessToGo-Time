@@ -1,6 +1,5 @@
 import SwiftUI
 import Redux
-
 import KimaiCore
 import CommonCore
 import CommonUI
@@ -8,174 +7,162 @@ import CommonUI
 struct ReportHeaderView: View {
     @Binding var selectedReportType: ReportType
     @Binding var selectedDate: Date
-    @Binding var selectedProject: Int?
-    
-    var projects: [KimaiProject]
-    @State private var showingWeekCalendar = false
-    
-    var calendarTapped: () -> ()
-    var filterTapped: () -> ()
-    var playTapped: () -> ()
-    
+    let activeFilterCount: Int
+    let filterTapped: () -> ()
+    let playTapped: () -> ()
+    @State private var showingCalendar = false
+
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 12) {
             HStack {
+                Spacer()
                 Button(action: filterTapped) {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
+                    Image(systemName: activeFilterCount == 0 ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                        .overlay(alignment: .topTrailing) {
+                            if activeFilterCount > 0 {
+                                Text("\(activeFilterCount)")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(Color.themeForeground)
+                                    .padding(3)
+                                    .background(Color.theme, in: Circle())
+                                    .offset(x: 6, y: -6)
+                            }
+                        }
                 }
                 .buttonStyle(IconButtonStyle())
-                .accessibilityLabel("Berichte filtern")
-                
-                let reportTypes = ReportType.allCases.filter({$0 != .day})
-                Picker("Report Date", selection: $selectedReportType){
-                    ForEach(reportTypes) { option in
-                        Text(option.rawValue)
-                        
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                .accentColor(Color.contrast)
-                
-                Button(action: playTapped){
-                    Image(systemName: "play.fill")
-                        .foregroundColor(Color.theme)
-                }
-                .buttonStyle(IconButtonStyle())
-                .accessibilityLabel("Zeiteintrag erstellen")
+                .accessibilityLabel("Berichte filtern, \(activeFilterCount) aktiv")
+                Button(action: playTapped) { Image(systemName: "play.fill").foregroundColor(Color.theme) }
+                    .buttonStyle(IconButtonStyle())
+                    .accessibilityLabel("Zeiteintrag erstellen")
             }
-            .font(.system(size: 20))
+            Picker("Zeitraum", selection: $selectedReportType) {
+                ForEach(ReportType.allCases.filter { $0 != .day }) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            HStack {
+                Button { move(-1) } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
+                    .accessibilityLabel("Vorheriger Zeitraum")
+                Spacer()
+                Button { showingCalendar = true } label: {
+                    Label(periodLabel, systemImage: "calendar")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(minHeight: 44)
+                }
+                .accessibilityLabel("\(selectedReportType.rawValue) auswählen: \(periodLabel)")
+                Spacer()
+                Button { move(1) } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }
+                    .accessibilityLabel("Nächster Zeitraum")
+            }
             .foregroundStyle(Color.theme)
-            
-            switch(selectedReportType){
-            case .day:
-                ReportHeaderWeeks(selectedDate: $selectedDate)
-            case .week:
-                weekNavigation
-            case .month:
-                HStack {
-                    Image(systemName: "arrow.left")
-                    Spacer()
-                    Text("Dez. 2024")
-                    Spacer()
-                    Image(systemName: "arrow.right")
-                }
-                .padding()
-            case .year: EmptyView()
-            }
-            
-            
         }
         .padding()
-        .foregroundStyle(Color.contrast)
-        .sheet(isPresented: $showingWeekCalendar) {
-            ReportWeekCalendar(selectedDate: $selectedDate)
+        .sheet(isPresented: $showingCalendar) {
+            ReportPeriodCalendar(selectedDate: $selectedDate, period: selectedReportType)
         }
     }
 
-    private var weekNavigation: some View {
-        let start = selectedDate.mondayWeekStart()
-        let end = Calendar.current.date(byAdding: .day, value: 6, to: start) ?? start
-
-        return HStack {
-            Button { moveWeek(-1) } label: {
-                Image(systemName: "chevron.left")
-            }
-            .accessibilityLabel("Vorherige Woche")
-            Spacer()
-            Button { showingWeekCalendar = true } label: {
-                Label("\(start.formatted(.dateTime.day().month(.abbreviated))) – \(end.formatted(.dateTime.day().month(.abbreviated).year()))", systemImage: "calendar")
-                    .font(.subheadline.weight(.semibold))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.theme.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-            }
-            .accessibilityLabel("Woche auswählen")
-            Spacer()
-            Button { moveWeek(1) } label: {
-                Image(systemName: "chevron.right")
-            }
-            .accessibilityLabel("Nächste Woche")
+    private var periodLabel: String {
+        switch selectedReportType {
+        case .day, .week:
+            let start = selectedDate.mondayWeekStart()
+            let end = Calendar.current.date(byAdding: .day, value: 6, to: start) ?? start
+            return "\(start.formatted(.dateTime.day().month(.abbreviated))) – \(end.formatted(.dateTime.day().month(.abbreviated).year()))"
+        case .month: return selectedDate.formatted(.dateTime.month(.wide).year())
+        case .year: return selectedDate.formatted(.dateTime.year())
         }
-        .foregroundStyle(Color.theme)
-        .padding(.top, 16)
     }
 
-    private func moveWeek(_ offset: Int) {
-        guard let date = Calendar.current.date(byAdding: .day, value: offset * 7, to: selectedDate) else { return }
-        selectedDate = date
+    private func move(_ offset: Int) {
+        let component: Calendar.Component = selectedReportType == .month ? .month : (selectedReportType == .year ? .year : .day)
+        let amount = selectedReportType == .week || selectedReportType == .day ? offset * 7 : offset
+        if let date = Calendar.current.date(byAdding: component, value: amount, to: selectedDate) { selectedDate = date }
     }
 }
 
-private struct ReportWeekCalendar: View {
+private struct ReportPeriodCalendar: View {
     @Binding var selectedDate: Date
+    let period: ReportType
     @Environment(\.dismiss) private var dismiss
-    @State private var displayedMonth: Date
+    @State private var displayed: Date
     private let calendar = Calendar.current
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 2), count: 7)
+    private let days = Array(repeating: GridItem(.flexible(), spacing: 2), count: 7)
+    private let grid = Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)
 
-    init(selectedDate: Binding<Date>) {
+    init(selectedDate: Binding<Date>, period: ReportType) {
         self._selectedDate = selectedDate
-        self._displayedMonth = State(initialValue: selectedDate.wrappedValue)
+        self.period = period
+        self._displayed = State(initialValue: selectedDate.wrappedValue)
     }
 
-    private var monthStart: Date {
-        calendar.date(from: calendar.dateComponents([.year, .month], from: displayedMonth)) ?? displayedMonth
+    private var year: Int { calendar.component(.year, from: displayed) }
+    private var firstYear: Int { (year / 12) * 12 }
+    private var monthStart: Date { calendar.date(from: calendar.dateComponents([.year, .month], from: displayed)) ?? displayed }
+    private var heading: String {
+        if period == .year { return "\(firstYear) – \(firstYear + 11)" }
+        if period == .month { return String(year) }
+        return monthStart.formatted(.dateTime.month(.wide).year())
     }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 16) {
                 HStack {
-                    Button { moveMonth(-1) } label: { Image(systemName: "chevron.left") }
-                        .accessibilityLabel("Vorheriger Monat")
+                    Button { navigate(-1) } label: { Image(systemName: "chevron.left").frame(width: 44, height: 44) }
+                        .accessibilityLabel("Zurück")
                     Spacer()
-                    Text(monthStart.formatted(.dateTime.month(.wide).year())).font(.headline)
+                    Text(heading).font(.headline)
                     Spacer()
-                    Button { moveMonth(1) } label: { Image(systemName: "chevron.right") }
-                        .accessibilityLabel("Nächster Monat")
-                }
-                .foregroundStyle(Color.theme)
-
-                LazyVGrid(columns: columns, spacing: 4) {
-                    ForEach(["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"], id: \.self) { day in
-                        Text(day).font(.caption).foregroundStyle(.secondary)
-                    }
-                    ForEach(0..<42, id: \.self) { offset in
-                        let date = calendar.date(byAdding: .day, value: offset, to: monthStart.mondayWeekStart()) ?? monthStart
-                        Button {
-                            selectedDate = date
-                            dismiss()
-                        } label: {
-                            Text(date.formatted(.dateTime.day()))
-                                .frame(maxWidth: .infinity, minHeight: 38)
-                                .background(date.isInMondayWeek(of: selectedDate) ? Color.theme : Color.clear, in: RoundedRectangle(cornerRadius: 8))
-                                .foregroundStyle(date.isInMondayWeek(of: selectedDate) ? Color.themeForeground : (calendar.isDate(date, equalTo: monthStart, toGranularity: .month) ? Color.contrast : Color.gray))
+                    Button { navigate(1) } label: { Image(systemName: "chevron.right").frame(width: 44, height: 44) }
+                        .accessibilityLabel("Weiter")
+                }.foregroundStyle(Color.theme)
+                if period == .week || period == .day {
+                    LazyVGrid(columns: days, spacing: 4) {
+                        ForEach(["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"], id: \.self) { Text($0).font(.caption).foregroundStyle(.secondary) }
+                        ForEach(0..<42, id: \.self) { offset in
+                            let date = calendar.date(byAdding: .day, value: offset, to: monthStart.mondayWeekStart()) ?? monthStart
+                            Button { select(date) } label: {
+                                Text(date.formatted(.dateTime.day()))
+                                    .frame(maxWidth: .infinity, minHeight: 40)
+                                    .background(date.isInMondayWeek(of: selectedDate) ? Color.theme : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                                    .foregroundStyle(date.isInMondayWeek(of: selectedDate) ? Color.themeForeground : (calendar.isDate(date, equalTo: monthStart, toGranularity: .month) ? Color.contrast : Color.gray))
+                            }.accessibilityLabel(date.formatted(date: .complete, time: .omitted))
                         }
-                        .accessibilityLabel(date.formatted(date: .complete, time: .omitted))
+                    }
+                    Text("Wähle einen Tag, um die ganze Woche auszuwählen.").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    LazyVGrid(columns: grid, spacing: 8) {
+                        ForEach(0..<12, id: \.self) { index in
+                            let targetYear = period == .year ? firstYear + index : year
+                            let month = period == .month ? index + 1 : calendar.component(.month, from: selectedDate)
+                            let date = calendar.date(from: DateComponents(year: targetYear, month: month, day: 1)) ?? displayed
+                            let selected = calendar.isDate(date, equalTo: selectedDate, toGranularity: period == .year ? .year : .month)
+                            Button { select(date) } label: {
+                                Text(period == .year ? String(targetYear) : date.formatted(.dateTime.month(.abbreviated)))
+                                    .frame(maxWidth: .infinity, minHeight: 48)
+                                    .background(selected ? Color.theme : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+                                    .foregroundStyle(selected ? Color.themeForeground : Color.contrast)
+                            }
+                        }
                     }
                 }
-
-                Button("Diese Woche") {
-                    selectedDate = Date.today
-                    dismiss()
-                }
-                .frame(maxWidth: .infinity)
-                .padding(10)
-                .background(Color.theme.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
-                .foregroundStyle(Color.theme)
+                Button(period == .month ? "Dieser Monat" : period == .year ? "Dieses Jahr" : "Diese Woche") { select(Date.today) }
+                    .frame(maxWidth: .infinity).padding(10)
+                    .background(Color.theme.opacity(0.1), in: RoundedRectangle(cornerRadius: 8))
+                    .foregroundStyle(Color.theme)
                 Spacer(minLength: 0)
             }
             .padding()
-            .navigationTitle("Woche auswählen")
+            .navigationTitle("\(period.rawValue) auswählen")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Fertig") { dismiss() } } }
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button { dismiss() } label: { Image(systemName: "xmark.circle.fill") }.accessibilityLabel("Schließen") } }
         }
     }
 
-    private func moveMonth(_ offset: Int) {
-        guard let date = calendar.date(byAdding: .month, value: offset, to: monthStart) else { return }
-        displayedMonth = date
+    private func navigate(_ offset: Int) {
+        let component: Calendar.Component = period == .week || period == .day ? .month : .year
+        let amount = period == .year ? offset * 12 : offset
+        if let date = calendar.date(byAdding: component, value: amount, to: displayed) { displayed = date }
     }
+    private func select(_ date: Date) { selectedDate = date; dismiss() }
 }

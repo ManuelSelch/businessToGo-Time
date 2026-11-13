@@ -6,12 +6,15 @@ struct ReportFeature: Reducer {
         var months: [String] = Calendar.current.shortMonthSymbols
         var selectedDate: Date = Date.today
         var selectedProject: Int?
+        var selectedCustomer: Int?
+        var selectedTeam: Int?
         var selectedReportType: ReportType = .week
     }
     
     enum Action: Equatable, Codable {
         case dateSelected(Date)
         case projectSelected(Int?)
+        case filtersSelected(customer: Int?, project: Int?, team: Int?)
         case reportTypeSelected(ReportType)
         
         case previousYearTapped
@@ -25,6 +28,10 @@ struct ReportFeature: Reducer {
             state.selectedDate = date
         case let .projectSelected(project):
             state.selectedProject = project
+        case let .filtersSelected(customer, project, team):
+            state.selectedCustomer = customer
+            state.selectedProject = project
+            state.selectedTeam = team
         case let .reportTypeSelected(reportType):
             state.selectedReportType = reportType
         

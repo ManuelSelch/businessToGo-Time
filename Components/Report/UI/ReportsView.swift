@@ -25,6 +25,7 @@ struct ReportResult {
 private struct ReportSelection: Equatable {
     let date: Date
     let project: Int?
+    let allowedProjects: Set<Int>?
     let type: ReportType
     let calendar: Calendar
 }
@@ -56,9 +57,20 @@ class ReportViewModel: ObservableObject {
         return preparedTimesheets
     }
 
-    func reportResult(records: [KimaiTimesheet], date: Date, project: Int?, type: ReportType, now: Date = .now) -> ReportResult {
+    func reportResult(records: [KimaiTimesheet], date: Date, project: Int?, type: ReportType, now: Date = .now, customer: Int? = nil, team: Int? = nil, projects: [KimaiProject] = [], customers: [KimaiCustomer] = []) -> ReportResult {
         let prepared = prepareTimesheets(records)
-        let selection = ReportSelection(date: date, project: project, type: type, calendar: .current)
+        let allowedProjects: Set<Int>?
+        if customer != nil || team != nil {
+            let matchingCustomers = Set(customers.filter { item in
+                if let customer, item.id != customer { return false }
+                if let team, !item.teams.contains(team) { return false }
+                return true
+            }.map(\.id))
+            allowedProjects = Set(projects.filter { matchingCustomers.contains($0.customer) }.map(\.id))
+        } else {
+            allowedProjects = nil
+        }
+        let selection = ReportSelection(date: date, project: project, allowedProjects: allowedProjects, type: type, calendar: .current)
         if cachedReport?.selection != selection {
             var selected: [KimaiTimesheet] = []
             var duration: TimeInterval = 0
@@ -68,6 +80,7 @@ class ReportViewModel: ObservableObject {
             var chartEntries: [ReportChartEntry] = []
             for entry in prepared {
                 if let project = project, entry.timesheet.project != project { continue }
+                if let allowedProjects = allowedProjects, !allowedProjects.contains(entry.timesheet.project) { continue }
                 guard let begin = entry.beginDate else { continue }
                 let matches: Bool
                 switch type {
@@ -120,9 +133,7 @@ class ReportViewModel: ObservableObject {
         return ReportResult(timesheets: cached.timesheets, totalDuration: duration, totalRate: cached.totalRate, weeklyTotals: weekdays.map { $0 / 3600 }, chartBuckets: buckets, hasRunningEntries: !cached.running.isEmpty)
     }
 
-    @Published var groupedData: [KimaiCustomer: [KimaiProject: Double]] = [:] // Customer -> Project -> Total Hours
-
-    func processRecords(records: [KimaiTimesheet], projects: [KimaiProject], customers: [KimaiCustomer]) {
+    func groupRecords(records: [KimaiTimesheet], projects: [KimaiProject], customers: [KimaiCustomer]) -> [KimaiCustomer: [KimaiProject: Double]] {
         var result: [KimaiCustomer: [KimaiProject: Double]] = [:]
 
         for record in records {
@@ -132,9 +143,7 @@ class ReportViewModel: ObservableObject {
             result[customer, default: [:]][project,default: 0]  += record.calculateDuration() ?? 0
         }
 
-        DispatchQueue.main.async {
-            self.groupedData = result
-        }
+        return result
     }
 }
 
@@ -145,6 +154,8 @@ struct ReportsView: View {
     let projects: [KimaiProject]
     let activities: [KimaiActivity]
     let customers: [KimaiCustomer]
+    var selectedCustomer: Int? = nil
+    var selectedTeam: Int? = nil
     @Binding var selectedProject: Int?
     @Binding var selectedDate: Date
     @Binding var selectedReportType: ReportType
@@ -161,7 +172,7 @@ struct ReportsView: View {
     
     // MARK: - View
     func reportResult(using viewModel: ReportViewModel, now: Date = .now) -> ReportResult {
-        viewModel.reportResult(records: timesheets, date: selectedDate, project: selectedProject, type: selectedReportType, now: now)
+        viewModel.reportResult(records: timesheets, date: selectedDate, project: selectedProject, type: selectedReportType, now: now, customer: selectedCustomer, team: selectedTeam, projects: projects, customers: customers)
     }
 
     var body: some View {
@@ -170,17 +181,16 @@ struct ReportsView: View {
             getHeader()
             if result.hasRunningEntries {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
-                    getReportChart(result: reportResult(using: viewModel, now: context.date))
+                    let current = reportResult(using: viewModel, now: context.date)
+                    getReportChart(result: current)
+                    getBody(timesheets: current.timesheets)
                 }
             } else {
                 getReportChart(result: result)
+                getBody(timesheets: result.timesheets)
             }
-            getBody(timesheets: result.timesheets)
         }
         .scrollContentBackground(.hidden)
-        .onAppear {
-            viewModel.processRecords(records: timesheets, projects: projects, customers: customers)
-        }
     }
 }
 
@@ -190,11 +200,8 @@ extension ReportsView {
     func getHeader() -> some View {
         ReportHeaderView(
             selectedReportType: $selectedReportType,
-            selectedDate: $selectedDate ,
-            selectedProject: $selectedProject,
-            projects: projects,
-            
-            calendarTapped: calendarTapped,
+            selectedDate: $selectedDate,
+            activeFilterCount: [selectedCustomer, selectedProject, selectedTeam].compactMap { $0 }.count,
             filterTapped: filterTapped,
             playTapped: playTapped
             
@@ -208,20 +215,28 @@ extension ReportsView {
             getTimesheets(timesheets: timesheets)
         case .week:
             getTimesheets(timesheets: timesheets)
-        case .month:
-            getSummary()
-        case .year:
-            getSummary()
+        case .month, .year:
+            if timesheets.isEmpty {
+                VStack(spacing: 8) {
+                    Image(systemName: "calendar").font(.title2)
+                    Text("Keine Zeiteinträge für diesen Zeitraum")
+                }
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                getSummary(timesheets: timesheets)
+            }
         }
     }
     
     @ViewBuilder
-    func getSummary() -> some View {
-        List {
-            ForEach(Array(viewModel.groupedData.keys), id: \.id) { customer in
+    func getSummary(timesheets: [KimaiTimesheet]) -> some View {
+        let groupedData = viewModel.groupRecords(records: timesheets, projects: projects, customers: customers)
+        return List {
+            ForEach(Array(groupedData.keys), id: \.id) { customer in
                 Section(
                     content: {
-                        if let projects = viewModel.groupedData[customer] {
+                        if let projects = groupedData[customer] {
                             ForEach(Array(projects.keys), id: \.id) { project in
                                 HStack {
                                     Text(project.name)
@@ -241,7 +256,7 @@ extension ReportsView {
                         HStack {
                             Text(customer.name)
                             Spacer()
-                            Text("00:00")
+                            Text(MyFormatter.duration(groupedData[customer]?.values.reduce(0, +) ?? 0))
                         }
                         .font(.system(size: 15))
                         .textCase(.uppercase)

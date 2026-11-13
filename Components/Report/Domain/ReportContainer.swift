@@ -16,6 +16,8 @@ struct ReportContainer: View {
                 projects: store.state.projects,
                 activities: store.state.activities,
                 customers: store.state.customers,
+                selectedCustomer: store.state.selectedCustomer,
+                selectedTeam: store.state.selectedTeam,
                 
                 selectedProject: store.binding(for: \.selectedProject, action: ReportComponent.Action.projectSelected),
                 selectedDate: store.binding(for: \.selectedDate, action: ReportComponent.Action.dateSelected),
@@ -37,8 +39,15 @@ struct ReportContainer: View {
             )
         case .filter:
             ReportFilterView(
-                selectedProject: store.state.projects.first { $0.id == store.state.selectedProject },
-                filterProjectsTapped: { router.push(.report(.filterProjects)) }
+                customers: store.state.customers,
+                projects: store.state.projects,
+                teams: store.state.teams,
+                customer: store.state.selectedCustomer,
+                project: store.state.selectedProject,
+                team: store.state.selectedTeam,
+                apply: { customer, project, team in
+                    store.send(.filtersSelected(customer: customer, project: project, team: team))
+                }
             )
         case .filterProjects:
             ReportFilterProjectsView(

@@ -29,8 +29,8 @@
 
 ## Reports
 
-- Reports provides day/week/month/year and project selection, calendar navigation, entry editing/deletion, totals and charts. In week view, arrows move by one week; the date range opens a calendar for selecting a Monday–Sunday week or returning to this week. The chart and entries use the selected week and project filter.
-- Week, month and year bar charts use the selected period and project filter. Month bars group Monday–Sunday weeks clipped to the month; year bars group by month. Month/year grouped rows still use an unfiltered, appearance-time snapshot; the day pie remains a placeholder.
+- Reports offers week/month/year navigation with previous/next buttons and period-specific selection sheets; choosing a day selects its Monday–Sunday week. A filter sheet combines one customer, project and team, with apply, cancel and reset. Team filtering uses the selected project's customer team assignments, not the time-entry author's team. Conflicting selections produce no entries. Existing entry editing/deletion remains available in the weekly list.
+- Week, month and year totals, bar charts and grouped rows use the selected period and combined filters. Month bars group Monday–Sunday weeks clipped to the month; year bars group by month. The day pie remains a placeholder.
 - Do not use these unverified reports for billing without comparing server data. Open-ended records use the current time when calculating duration.
 
 ## Offline and sync
