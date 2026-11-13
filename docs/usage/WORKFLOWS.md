@@ -14,7 +14,7 @@
 
 ## Customers, projects, activities
 
-- The Projects tab is the management area: start from customers, select a customer to view its projects, then project details/activities.
+- The Projects tab is the management area: customers start collapsed; tap a customer to show its projects, then select a project for details/activities. Searching temporarily reveals matching projects; clearing search restores the prior expanded groups.
 - The customer list combines team selection with case-insensitive customer/project-name search. The plus button opens customer creation; saving a nonblank name clears the filters, while cancelling leaves them unchanged. Customer edit and delete remain available through swipe actions.
 - Create/edit callbacks save local records. Customer team assignment is not editable in the form: outgoing customer requests omit teams. In [Kimai 2.72.0](https://github.com/kimai/kimai/blob/2.72.0/src/API/TeamController.php), team access is changed separately through the team/customer API, requiring permission to edit the team and manage customer permissions. The existing sync cannot safely retry a failed assignment after a successful customer creation, so assignment is not promised. Deleting a customer with projects or a project with activities requests a blocking popup; other deletes ask confirmation.
 - Previously synced customer/project/activity deletion is generally represented by visibility changes, while new unsynced records can be removed locally. This is not a universal server-delete API.

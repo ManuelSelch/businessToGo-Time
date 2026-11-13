@@ -7,6 +7,7 @@ public struct KimaiCustomersListView: View {
     let customers: [KimaiCustomer]
     let projects: [KimaiProject]
     @Binding var search: String
+    @State private var expandedCustomers: Set<Int> = []
     let hasFilters: Bool
     let resetFilters: () -> Void
     let customerEditTapped: (KimaiCustomer) -> Void
@@ -67,13 +68,6 @@ public struct KimaiCustomersListView: View {
             }
             .padding(.horizontal, ControlSpacing.standard)
 
-            Text("KUNDEN")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, ControlSpacing.standard)
-                .padding(.top, 4)
-
             List {
                 if customers.isEmpty {
                     VStack(alignment: .leading, spacing: ControlSpacing.compact) {
@@ -85,21 +79,38 @@ public struct KimaiCustomersListView: View {
                     let customerProjects = projects.filter {
                         $0.customer == customer.id && CustomerSearch.projectMatches(customerName: customer.name, projectName: $0.name, query: search)
                     }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+                    let isSearching = !search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    let expanded = isSearching || expandedCustomers.contains(customer.id)
                     Section {
                         HStack(spacing: 0) {
-                            FolderRow(title: customer.name, color: folderColor(customer.color), showsChevron: false, minHeight: 44)
+                            Button {
+                                if expandedCustomers.contains(customer.id) {
+                                    expandedCustomers.remove(customer.id)
+                                } else {
+                                    expandedCustomers.insert(customer.id)
+                                }
+                            } label: {
+                                HStack {
+                                    FolderRow(title: customer.name, color: folderColor(customer.color), showsChevron: false, minHeight: 44)
+                                    Image(systemName: expanded ? "chevron.down" : "chevron.right")
+                                        .foregroundStyle(.secondary)
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityValue(expanded ? "Aufgeklappt" : "Zugeklappt")
                             Button { projectCreated(customer) } label: { Image(systemName: "plus").frame(width: 44, height: 44) }
                                 .buttonStyle(.plain)
                                 .foregroundStyle(Color.primary)
                                 .accessibilityLabel("Projekt für \(customer.name) erstellen")
                         }
                         .listRowInsets(EdgeInsets(top: 0, leading: 28, bottom: 0, trailing: 28))
-                        .listRowBackground(CustomerGroupBackground(top: true, bottom: customerProjects.isEmpty))
+                        .listRowBackground(CustomerGroupBackground(top: true, bottom: !expanded || customerProjects.isEmpty))
                         .swipeActions(edge: .trailing) {
                             Button("Delete", role: .destructive) { customerDeleteTapped(customer) }
                             Button("Edit") { customerEditTapped(customer) }.tint(.gray)
                         }
-                        ForEach(customerProjects) { project in
+                        ForEach(expanded ? customerProjects : []) { project in
                             Button { projectTapped(project) } label: {
                                 FolderRow(title: project.name, color: folderColor(project.color), minHeight: 44)
                                     .padding(.leading, 16)
@@ -115,6 +126,7 @@ public struct KimaiCustomersListView: View {
                     }
                 }
             }
+            .padding(.top, 12)
             .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .modifier(CompactSectionSpacing())
