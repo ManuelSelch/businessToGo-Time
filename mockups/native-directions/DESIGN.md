@@ -1,6 +1,6 @@
 # Unified native UI mockup
 
-- Revision: 11. Status: in review; not approved for production implementation.
+- Revision: 11. Status: approved for visual/interaction intent; implementation not yet authorized.
 - Current feedback: correct remaining vertical label/chevron misalignment. Label now uses vertically centered flex rather than block layout; an inner text span handles truncation without changing label alignment. Chevron section is centered on the same row.
 - Goal: refine one native-feeling iOS design using synthetic time-tracking content.
 - Scope: isolated browser prototypes only. SwiftUI, app dependencies and existing approved weekly-report mockup are unchanged.
@@ -64,4 +64,4 @@ Read current dashboard, Today routes, app router, report/header, management tool
 - HTTP HTML/module/style serving checked; startup log inspected. No browser execution or visual verification performed.
 - App pipeline intentionally not required for isolated mockups; no production verification claimed.
 - npm install reports one high-severity development dependency advisory; no automatic upgrades. Production-only audit reports zero.
-- Approval evidence: user requested consolidating the mockups and removing the Home daily total. This authorizes revision 4 mockup edits only, not production implementation. User also requested the proposed team-filter improvement in the mockup. Await explicit review/approval of revision 11.
+- Approval evidence: user requested consolidating the mockups and removing the Home daily total. This authorizes revision 4 mockup edits only, not production implementation. User also requested the proposed team-filter improvement in the mockup. User explicitly approved revision 11 (“good. approved. Now suggest how to start implementing”). Approved source is preserved; next step is implementation planning, not implicit authorization to change production behavior.
