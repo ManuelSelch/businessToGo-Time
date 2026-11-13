@@ -2,6 +2,24 @@
 
 Reviewed at `de9e71e`, 2026-10-25. This is the **S5 allocation/design deliverable**, not an implemented test harness. See [proposed design](../app-review/DESIGN.md) for approval gates and [baseline](../app-review/BASELINE.md) for actual command results. No test execution passed in that review: app test build and the Common host test build failed before execution. After Boarding removal, the app's generic simulator build-for-testing succeeded; tests were not executed.
 
+## Weekly report benchmark
+
+[ReportsPerformanceTests](../../businessToGoTests/Report/UI/ReportsPerformanceTests.swift) adds a focused calculation check and XCTest wall-clock benchmark for the current production `ReportsView.getReportChart()` path. It uses 10,000 synthetic, closed one-hour entries over 100 days: the selected Monday–Sunday week contains 700 entries and 100 hours per weekday. Fixture generation is outside the measured block; no storage, accounts or server are used.
+
+Run the Pi `report-benchmark` suite, or:
+
+```sh
+xcodebuild test -project businessToGo.xcodeproj -scheme businessToGo \
+  -configuration Release -destination 'platform=iOS Simulator,name=iPhone 17' \
+  -only-testing:businessToGoTests/ReportsPerformanceTests \
+  -parallel-testing-enabled NO -enableCodeCoverage NO \
+  CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES
+```
+
+XCTest repeats chart preparation ten times and reports the average and variation in its test results. Keep the same destination, time zone, toolchain and build settings for comparisons; set an Xcode performance baseline after a successful run. This measures chart-value/view construction, including repeated filtering and date parsing—not SwiftUI layout, drawing, scrolling, list grouping or full-report latency. It is not a speedup claim or a hard timing threshold.
+
+**Execution status (2026-11-13):** the Release pipeline was attempted with and without code coverage. Both builds failed before test execution while linking the pinned ReduxDebug product: unresolved `SwiftUIIntrospect.IntrospectModifier` / `NavigationViewWithStackStyleType` symbols. No timing baseline or passing calculation assertion has been recorded. Dependency repair is outside this benchmark-only change; report behavior remains unchanged.
+
 ## Suite boundaries
 
 | Suite | Real system under test | Replaced/controlled boundary | Purpose |
