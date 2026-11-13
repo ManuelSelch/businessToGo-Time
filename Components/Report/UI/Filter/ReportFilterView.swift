@@ -38,8 +38,6 @@ struct ReportFilterView: View {
                         Text("Alle Teams").tag(Int?.none)
                         ForEach(teams, id: \.id) { Text($0.name).tag(Optional($0.id)) }
                     }
-                } footer: {
-                    Text("Alle ausgewählten Filter werden kombiniert. Teams beziehen sich auf die Teamzuordnung des Kunden.")
                 }
                 Button("Filter zurücksetzen") { customer = nil; project = nil; team = nil }
                     .foregroundStyle(Color.theme)
