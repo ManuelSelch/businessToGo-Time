@@ -1,7 +1,7 @@
 # Unified native UI mockup
 
-- Revision: 9. Status: in review; not approved for production implementation.
-- Current feedback: move team selection into the Projects header and remove redundant team labels/icon. Trigger shows only “Alle” or the selected team name with a small chevron.
+- Revision: 10. Status: in review; not approved for production implementation.
+- Current feedback: keep the team name and dropdown arrow on one horizontal row. Trigger uses explicit nonwrapping flex layout, a shrinkable/truncated label and a nonshrinking chevron.
 - Goal: refine one native-feeling iOS design using synthetic time-tracking content.
 - Scope: isolated browser prototypes only. SwiftUI, app dependencies and existing approved weekly-report mockup are unchanged.
 - Platform assumption: iPhone first; one centered phone canvas, width constrained to the available screen. Browser components approximate iOS, not UIKit/SwiftUI gestures, materials or Dynamic Type.
@@ -64,4 +64,4 @@ Read current dashboard, Today routes, app router, report/header, management tool
 - HTTP HTML/module/style serving checked; startup log inspected. No browser execution or visual verification performed.
 - App pipeline intentionally not required for isolated mockups; no production verification claimed.
 - npm install reports one high-severity development dependency advisory; no automatic upgrades. Production-only audit reports zero.
-- Approval evidence: user requested consolidating the mockups and removing the Home daily total. This authorizes revision 4 mockup edits only, not production implementation. User also requested the proposed team-filter improvement in the mockup. Await explicit review/approval of revision 9.
+- Approval evidence: user requested consolidating the mockups and removing the Home daily total. This authorizes revision 4 mockup edits only, not production implementation. User also requested the proposed team-filter improvement in the mockup. Await explicit review/approval of revision 10.
