@@ -82,6 +82,9 @@ public struct KimaiCustomersListView: View {
                     }
                 }
                 ForEach(customers.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { customer in
+                    let customerProjects = projects.filter {
+                        $0.customer == customer.id && CustomerSearch.projectMatches(customerName: customer.name, projectName: $0.name, query: search)
+                    }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
                     Section {
                         HStack(spacing: 0) {
                             FolderRow(title: customer.name, color: folderColor(customer.color), showsChevron: false, minHeight: 44)
@@ -91,19 +94,19 @@ public struct KimaiCustomersListView: View {
                                 .accessibilityLabel("Projekt für \(customer.name) erstellen")
                         }
                         .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
+                        .listRowBackground(CustomerGroupBackground(top: true, bottom: customerProjects.isEmpty))
                         .swipeActions(edge: .trailing) {
                             Button("Delete", role: .destructive) { customerDeleteTapped(customer) }
                             Button("Edit") { customerEditTapped(customer) }.tint(.gray)
                         }
-                        ForEach(projects.filter {
-                            $0.customer == customer.id && CustomerSearch.projectMatches(customerName: customer.name, projectName: $0.name, query: search)
-                        }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { project in
+                        ForEach(customerProjects) { project in
                             Button { projectTapped(project) } label: {
                                 FolderRow(title: project.name, color: folderColor(project.color), minHeight: 44)
                                     .padding(.leading, 16)
                             }
                             .buttonStyle(.plain)
                             .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
+                            .listRowBackground(CustomerGroupBackground(top: false, bottom: project.id == customerProjects.last?.id))
                             .swipeActions(edge: .trailing) {
                                 Button("Delete", role: .destructive) { projectDeleteTapped(project) }
                                 Button("Edit") { projectEditTapped(project) }.tint(.gray)
@@ -117,6 +120,21 @@ public struct KimaiCustomersListView: View {
             .environment(\.defaultMinListHeaderHeight, 0)
             .environment(\.defaultMinListRowHeight, 44)
         }
+    }
+}
+
+private struct CustomerGroupBackground: View {
+    let top: Bool
+    let bottom: Bool
+
+    var body: some View {
+        GeometryReader { geometry in
+            RoundedRectangle(cornerRadius: 9)
+                .fill(Color.homeCard)
+                .frame(height: geometry.size.height + (top ? 0 : 9) + (bottom ? 0 : 9))
+                .offset(y: top ? 0 : -9)
+        }
+        .clipped()
     }
 }
 
