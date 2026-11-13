@@ -123,7 +123,7 @@ public struct KimaiCustomersListView: View {
 private struct CompactSectionSpacing: ViewModifier {
     @ViewBuilder func body(content: Content) -> some View {
         if #available(iOS 17, macOS 14, *) {
-            content.listSectionSpacing(2)
+            content.listSectionSpacing(8)
         } else {
             content
         }
