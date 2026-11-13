@@ -1,7 +1,7 @@
 # Unified native UI mockup
 
-- Revision: 5. Status: in review; not approved for production implementation.
-- Current feedback: display timer duration as hours:minutes, without seconds.
+- Revision: 6. Status: in review; not approved for production implementation.
+- Current feedback: replace the placeholder team action with a compact single-select menu that combines with customer/project search.
 - Goal: refine one native-feeling iOS design using synthetic time-tracking content.
 - Scope: isolated browser prototypes only. SwiftUI, app dependencies and existing approved weekly-report mockup are unchanged.
 - Platform assumption: iPhone first; one centered phone canvas, width constrained to the available screen. Browser components approximate iOS, not UIKit/SwiftUI gestures, materials or Dynamic Type.
@@ -36,7 +36,10 @@ Read current dashboard, Today routes, app router, report/header, management tool
 - Route: /native-directions/
 - Query parameters: screen=Heute|Projekte|Berichte, state=running|idle|empty|offline, theme=light|dark. Controls update the URL. Reload restores these review choices.
 - Review controls select the initial screen/state/theme and reset the single preview. The phone's tabs navigate within the preview.
-- Interactive: three tabs, start/stop simulation, recent project selection, time-entry form sheet, project search, report period/filter controls and bounded previous/next period samples.
+- Interactive: three tabs, start/stop simulation, recent project selection, time-entry form sheet, combined team/search filtering, report period/filter controls and bounded previous/next period samples.
+- Projects filter: “Teams · Alle” opens a menu with Alle Teams / Entwicklung / Design / Operations; the selected option has a checkmark and radio-menu semantics. Selected team name remains visible above the customer list even with no results. This short synthetic team list uses a menu; a searchable selection sheet is not modeled.
+- Team and case-insensitive trimmed customer/project search combine with AND. Reset clears both. No matches displays a dedicated empty state and “Filter zurücksetzen”. Team/search state is owned by the phone, retained across tab navigation and sheets, and reset by reload/global review controls. It does not affect Home recents or Reports.
+- Suggested manual review: choose Design (Nord Studio + Atelier West); search “Mobile” (Nord Studio only); select Operations (empty); reset (all three); select a project and close its sheet (selection/search retained). Fake team memberships only; no real permissions/API filtering is implied.
 - “Zeit hinzufügen” replaces the ambiguous plus-only header action. It opens the manual time-entry sheet (project, activity, description, start and optional end); available on all three tabs. It does not create a project. Save behavior remains the existing prototype simulation, not a finalized production lifecycle.
 - Reports uses deterministic sample bars; selected period is illustrative rather than date-correct reporting. Filters change illustrative totals only. Empty/off-week examples omit entries.
 - Offline replaces the sync toolbar icon with a same-sized cloud-off icon, with an accessible name and hover title including pending changes. Tapping reveals simulated status details; there is no persistent offline banner. Offline and sync states are authored examples, not evidence of actual sync correctness.
@@ -60,4 +63,4 @@ Read current dashboard, Today routes, app router, report/header, management tool
 - HTTP HTML/module/style serving checked; startup log inspected. No browser execution or visual verification performed.
 - App pipeline intentionally not required for isolated mockups; no production verification claimed.
 - npm install reports one high-severity development dependency advisory; no automatic upgrades. Production-only audit reports zero.
-- Approval evidence: user requested consolidating the mockups and removing the Home daily total. This authorizes revision 4 mockup edits only, not production implementation. Await explicit review/approval of revision 5.
+- Approval evidence: user requested consolidating the mockups and removing the Home daily total. This authorizes revision 4 mockup edits only, not production implementation. User also requested the proposed team-filter improvement in the mockup. Await explicit review/approval of revision 6.
