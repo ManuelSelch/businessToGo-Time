@@ -7,34 +7,10 @@ import CommonUI
 struct ReportHeaderView: View {
     @Binding var selectedReportType: ReportType
     @Binding var selectedDate: Date
-    let activeFilterCount: Int
-    let filterTapped: () -> ()
-    let playTapped: () -> ()
     @State private var showingCalendar = false
 
     var body: some View {
         VStack(spacing: 12) {
-            HStack {
-                Spacer()
-                Button(action: filterTapped) {
-                    Image(systemName: activeFilterCount == 0 ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                        .overlay(alignment: .topTrailing) {
-                            if activeFilterCount > 0 {
-                                Text("\(activeFilterCount)")
-                                    .font(.system(size: 9, weight: .bold))
-                                    .foregroundStyle(Color.themeForeground)
-                                    .padding(3)
-                                    .background(Color.theme, in: Circle())
-                                    .offset(x: 6, y: -6)
-                            }
-                        }
-                }
-                .buttonStyle(IconButtonStyle())
-                .accessibilityLabel("Berichte filtern, \(activeFilterCount) aktiv")
-                Button(action: playTapped) { Image(systemName: "play.fill").foregroundColor(Color.theme) }
-                    .buttonStyle(IconButtonStyle())
-                    .accessibilityLabel("Zeiteintrag erstellen")
-            }
             Picker("Zeitraum", selection: $selectedReportType) {
                 ForEach(ReportType.allCases.filter { $0 != .day }) { Text($0.rawValue).tag($0) }
             }

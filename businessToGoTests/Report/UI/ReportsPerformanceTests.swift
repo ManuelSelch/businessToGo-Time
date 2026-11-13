@@ -42,9 +42,6 @@ final class ReportsPerformanceTests: XCTestCase {
             selectedProject: Binding(get: { self.selectedProject }, set: { self.selectedProject = $0 }),
             selectedDate: Binding(get: { self.selectedDate }, set: { self.selectedDate = $0 }),
             selectedReportType: .constant(.week),
-            calendarTapped: {},
-            filterTapped: {},
-            playTapped: {},
             editTapped: { _ in },
             deleteTapped: { _ in }
         )

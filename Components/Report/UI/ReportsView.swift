@@ -161,9 +161,6 @@ struct ReportsView: View {
     @Binding var selectedReportType: ReportType
     
     // MARK: - Action
-    let calendarTapped: () -> ()
-    let filterTapped: () -> ()
-    let playTapped: () -> ()
     let editTapped: (KimaiTimesheet) -> ()
     let deleteTapped: (KimaiTimesheet) -> ()
     
@@ -200,11 +197,7 @@ extension ReportsView {
     func getHeader() -> some View {
         ReportHeaderView(
             selectedReportType: $selectedReportType,
-            selectedDate: $selectedDate,
-            activeFilterCount: [selectedCustomer, selectedProject, selectedTeam].compactMap { $0 }.count,
-            filterTapped: filterTapped,
-            playTapped: playTapped
-            
+            selectedDate: $selectedDate
         )
     }
     
