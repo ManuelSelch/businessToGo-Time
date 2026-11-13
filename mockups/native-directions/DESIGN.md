@@ -1,7 +1,7 @@
 # Unified native UI mockup
 
-- Revision: 4. Status: in review; not approved for production implementation.
-- Current feedback: merge B's timer emphasis with C's compact layout into one design; remove “Heute erfasst” from Home.
+- Revision: 5. Status: in review; not approved for production implementation.
+- Current feedback: display timer duration as hours:minutes, without seconds.
 - Goal: refine one native-feeling iOS design using synthetic time-tracking content.
 - Scope: isolated browser prototypes only. SwiftUI, app dependencies and existing approved weekly-report mockup are unchanged.
 - Platform assumption: iPhone first; one centered phone canvas, width constrained to the available screen. Browser components approximate iOS, not UIKit/SwiftUI gestures, materials or Dynamic Type.
@@ -40,7 +40,7 @@ Read current dashboard, Today routes, app router, report/header, management tool
 - “Zeit hinzufügen” replaces the ambiguous plus-only header action. It opens the manual time-entry sheet (project, activity, description, start and optional end); available on all three tabs. It does not create a project. Save behavior remains the existing prototype simulation, not a finalized production lifecycle.
 - Reports uses deterministic sample bars; selected period is illustrative rather than date-correct reporting. Filters change illustrative totals only. Empty/off-week examples omit entries.
 - Offline replaces the sync toolbar icon with a same-sized cloud-off icon, with an accessible name and hover title including pending changes. Tapping reveals simulated status details; there is no persistent offline banner. Offline and sync states are authored examples, not evidence of actual sync correctness.
-- Timer digits are static. No live timing, backend, persistence, real accounts, real authentication or production dependency changes.
+- Timer displays hours:minutes (02:24 running, 00:00 idle), without seconds. Timer digits are static. No live timing, backend, persistence, real accounts, real authentication or production dependency changes.
 - Settings sheet is an abbreviated preview; it is not an approved removal of existing settings.
 - Agentation is development-only, using local copy/paste annotations; no endpoint or MCP integration.
 
@@ -60,4 +60,4 @@ Read current dashboard, Today routes, app router, report/header, management tool
 - HTTP HTML/module/style serving checked; startup log inspected. No browser execution or visual verification performed.
 - App pipeline intentionally not required for isolated mockups; no production verification claimed.
 - npm install reports one high-severity development dependency advisory; no automatic upgrades. Production-only audit reports zero.
-- Approval evidence: user requested consolidating the mockups and removing the Home daily total. This authorizes revision 4 mockup edits only, not production implementation. Await explicit review/approval of revision 4.
+- Approval evidence: user requested consolidating the mockups and removing the Home daily total. This authorizes revision 4 mockup edits only, not production implementation. Await explicit review/approval of revision 5.
