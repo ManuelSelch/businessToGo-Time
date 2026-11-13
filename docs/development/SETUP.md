@@ -50,7 +50,7 @@ To build the current worktree and install it on **iPhone Manuel**, connect and u
 ./scripts/install-iphone.sh
 ```
 
-The script uses a separate derived-data cache per worktree and installs the Debug build; it does not launch the app. Installation may replace an existing app with the same bundle identifier. Use synthetic data and review the safety warnings above. The script's build/install orchestration can be checked without a device with `bash tests/scripts/install-iphone-test.sh`.
+The script uses a separate derived-data cache per worktree and installs the optimized Release build; it does not launch the app. Installation may replace an existing app with the same bundle identifier. Use synthetic data and review the safety warnings above.
 
 For a widget-only compile check:
 

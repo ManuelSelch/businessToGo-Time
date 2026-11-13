@@ -5,14 +5,14 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 device='iPhone Manuel'
 worktree_hash="$(printf '%s' "$root" | shasum -a 256 | cut -c 1-16)"
 derived_data="$HOME/Library/Caches/businessToGo-device-build/$worktree_hash"
-app="$derived_data/Build/Products/Debug-iphoneos/businessToGo.app"
+app="$derived_data/Build/Products/Release-iphoneos/businessToGo.app"
 
 echo "Building this worktree for $device: $root"
 echo 'Installing may replace the existing app with the same bundle identifier.'
 xcodebuild build \
     -project "$root/businessToGo.xcodeproj" \
     -scheme businessToGo \
-    -configuration Debug \
+    -configuration Release \
     -destination "platform=iOS,name=$device" \
     -derivedDataPath "$derived_data" \
     -allowProvisioningUpdates
