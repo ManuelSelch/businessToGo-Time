@@ -44,6 +44,14 @@ xcodebuild -project businessToGo.xcodeproj -scheme businessToGo \
 
 The missing Boarding dependency was removed; a generic iOS simulator app build succeeded afterward. This does not verify app launch or test execution.
 
+To build the current worktree and install it on **iPhone Manuel**, connect and unlock the phone, enable Developer Mode, and configure development signing for the app and widget in Xcode. Then run:
+
+```sh
+./scripts/install-iphone.sh
+```
+
+The script uses a separate derived-data cache per worktree and installs the Debug build; it does not launch the app. Installation may replace an existing app with the same bundle identifier. Use synthetic data and review the safety warnings above. The script's build/install orchestration can be checked without a device with `bash tests/scripts/install-iphone-test.sh`.
+
 For a widget-only compile check:
 
 ```sh
