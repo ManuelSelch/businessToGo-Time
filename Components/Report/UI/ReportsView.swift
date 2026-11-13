@@ -6,7 +6,26 @@ import CommonCore
 import KimaiCore
 import KimaiUI
 
+struct ReportTimesheet {
+    let timesheet: KimaiTimesheet
+    let beginDate: Date?
+}
+
 class ReportViewModel: ObservableObject {
+    private var cachedTimesheets: [KimaiTimesheet]?
+    private var cachedTimeZone: TimeZone?
+    private var preparedTimesheets: [ReportTimesheet] = []
+
+    func prepareTimesheets(_ timesheets: [KimaiTimesheet]) -> [ReportTimesheet] {
+        let timeZone = TimeZone.current
+        if cachedTimesheets != timesheets || cachedTimeZone != timeZone {
+            preparedTimesheets = timesheets.map { ReportTimesheet(timesheet: $0, beginDate: $0.getBeginDate()) }
+            cachedTimesheets = timesheets
+            cachedTimeZone = timeZone
+        }
+        return preparedTimesheets
+    }
+
     @Published var groupedData: [KimaiCustomer: [KimaiProject: Double]] = [:] // Customer -> Project -> Total Hours
 
     func processRecords(records: [KimaiTimesheet], projects: [KimaiProject], customers: [KimaiCustomer]) {
@@ -47,33 +66,28 @@ struct ReportsView: View {
     
     
     // MARK: - View
-    var timesheetsFiltered: [KimaiTimesheet] {
-        var timesheets = timesheets
-        
-        if let project = selectedProject {
-            timesheets = timesheets.filter { $0.project == project }
-        }
-        
-        switch(selectedReportType){
-        case .day:
-            return timesheets.filter{ $0.getBeginDate()?.isDay(of: selectedDate) ?? false }
-        case .week:
-            return timesheets.filter { $0.getBeginDate()?.isInMondayWeek(of: selectedDate) ?? false }
-        case .month:
-            return timesheets.filter { $0.getBeginDate()?.isMonth(of: selectedDate) ?? false }
-        case .year:
-            return timesheets.filter { $0.getBeginDate()?.isYear(of: selectedDate) ?? false }
+    func timesheetsFiltered(using viewModel: ReportViewModel) -> [ReportTimesheet] {
+        let prepared = viewModel.prepareTimesheets(timesheets)
+        return prepared.filter { entry in
+            if let project = selectedProject, entry.timesheet.project != project { return false }
+            guard let begin = entry.beginDate else { return false }
+            switch selectedReportType {
+            case .day: return begin.isDay(of: selectedDate)
+            case .week: return begin.isInMondayWeek(of: selectedDate)
+            case .month: return begin.isMonth(of: selectedDate)
+            case .year: return begin.isYear(of: selectedDate)
+            }
         }
     }
     
     
     var body: some View {
-        let filtered = timesheetsFiltered
+        let filtered = timesheetsFiltered(using: viewModel)
         return VStack(spacing: 0){
             getHeader()
             getReportChart(timesheets: filtered)
                 .frame(maxHeight: 100)
-            getBody(timesheets: filtered)
+            getBody(timesheets: filtered.map(\.timesheet))
         }
         .onAppear {
             viewModel.processRecords(records: timesheets, projects: projects, customers: customers)
@@ -178,8 +192,8 @@ extension ReportsView {
     }
     
     @ViewBuilder
-    func getReportChart(timesheets: [KimaiTimesheet]) -> some View {
-        ReportSummaryView(timesheets: timesheets)
+    func getReportChart(timesheets: [ReportTimesheet]) -> some View {
+        ReportSummaryView(timesheets: timesheets.map(\.timesheet))
         
         switch(selectedReportType){
         case .week:
@@ -201,11 +215,11 @@ extension ReportsView {
 }
 
 extension ReportsView {
-    func weeklyTotals(for timesheets: [KimaiTimesheet]) -> [TimeInterval] {
+    func weeklyTotals(for timesheets: [ReportTimesheet]) -> [TimeInterval] {
         var totals = Array(repeating: TimeInterval.zero, count: 8)
-        for timesheet in timesheets {
-            guard let weekday = timesheet.getBeginDate()?.getWeekday(), (1...7).contains(weekday) else { continue }
-            totals[weekday] += timesheet.calculateDuration() ?? 0
+        for entry in timesheets {
+            guard let weekday = entry.beginDate?.getWeekday(), (1...7).contains(weekday) else { continue }
+            totals[weekday] += entry.timesheet.calculateDuration() ?? 0
         }
         return totals.map { $0 / 3600 }
     }
