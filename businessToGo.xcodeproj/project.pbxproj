@@ -17,6 +17,7 @@
 		841BDF5B2C66103A008E3B32 /* TodayContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 841BDF5A2C66103A008E3B32 /* TodayContainer.swift */; };
 		841BDF5D2C661076008E3B32 /* TodayComponent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 841BDF5C2C661076008E3B32 /* TodayComponent.swift */; };
 		842A9D8E2C60007200A133E9 /* ReportContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 842A9D8D2C60007200A133E9 /* ReportContainer.swift */; };
+		A19100012F00000100000001 /* ReportChartData.swift in Sources */ = {isa = PBXBuildFile; fileRef = A19100022F00000100000001 /* ReportChartData.swift */; };
 		842A9D902C60008500A133E9 /* ReportComponent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 842A9D8F2C60008500A133E9 /* ReportComponent.swift */; };
 		842A9D942C60009F00A133E9 /* ReportType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 842A9D932C60009F00A133E9 /* ReportType.swift */; };
 		842A9D962C6000A500A133E9 /* WeekDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 842A9D952C6000A500A133E9 /* WeekDay.swift */; };
@@ -133,6 +134,7 @@
 		841BDF5A2C66103A008E3B32 /* TodayContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayContainer.swift; sourceTree = "<group>"; };
 		841BDF5C2C661076008E3B32 /* TodayComponent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayComponent.swift; sourceTree = "<group>"; };
 		842A9D8D2C60007200A133E9 /* ReportContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportContainer.swift; sourceTree = "<group>"; };
+		A19100022F00000100000001 /* ReportChartData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportChartData.swift; sourceTree = "<group>"; };
 		842A9D8F2C60008500A133E9 /* ReportComponent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportComponent.swift; sourceTree = "<group>"; };
 		842A9D932C60009F00A133E9 /* ReportType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReportType.swift; sourceTree = "<group>"; };
 		842A9D952C6000A500A133E9 /* WeekDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekDay.swift; sourceTree = "<group>"; };
@@ -352,6 +354,7 @@
 			children = (
 				842A9D8D2C60007200A133E9 /* ReportContainer.swift */,
 				842A9D8F2C60008500A133E9 /* ReportComponent.swift */,
+				A19100022F00000100000001 /* ReportChartData.swift */,
 				842A9DA32C60044E00A133E9 /* ReportFeature.swift */,
 			);
 			path = Domain;
@@ -812,6 +815,7 @@
 				842A9D992C6000E200A133E9 /* ReportHeaderDay.swift in Sources */,
 				84F827792C695550000D0254 /* ProjectsView.swift in Sources */,
 				842A9D902C60008500A133E9 /* ReportComponent.swift in Sources */,
+				A19100012F00000100000001 /* ReportChartData.swift in Sources */,
 				9722EBCB2D6B3A5A004F5AB8 /* KimaiComponent.swift in Sources */,
 				842A9D942C60009F00A133E9 /* ReportType.swift in Sources */,
 				84458AE32BC41A720041E40F /* AppFeature.swift in Sources */,

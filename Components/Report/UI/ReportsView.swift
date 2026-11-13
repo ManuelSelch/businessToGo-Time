@@ -183,23 +183,14 @@ extension ReportsView {
         VStack(alignment: .leading, spacing: 12) {
             ReportSummaryView(timesheets: timesheetsFiltered)
 
-            switch(selectedReportType){
+            switch selectedReportType {
             case .week:
-                let days = [("Mo", 2), ("Di", 3), ("Mi", 4), ("Do", 5), ("Fr", 6), ("Sa", 7), ("So", 1)]
-                Chart {
-                    ForEach(days, id: \.1) { day in
-                        BarMark(
-                            x: .value("Tag", day.0),
-                            y: .value("Stunden", getTotalTime(for: timesheetsFiltered, weekday: day.1))
-                        )
-                        .cornerRadius(4)
-                        .foregroundStyle(Color.theme)
-                    }
-                }
-                .chartXAxis { AxisMarks { _ in AxisValueLabel() } }
-                .chartYAxis(.hidden)
-                .frame(height: 100)
-            default:
+                reportBarChart(period: .week)
+            case .month:
+                reportBarChart(period: .month)
+            case .year:
+                reportBarChart(period: .year)
+            case .day:
                 ChartPieView(customers.map { .init(id: $0.id, name: $0.name, value: 10) })
                     .chartLegend(.hidden)
                     .frame(height: 100)
@@ -212,10 +203,40 @@ extension ReportsView {
     }
 }
 
+private struct ReportBarChart: View {
+    let buckets: [ReportChartBucket]
+
+    var body: some View {
+        Chart(buckets) { bucket in
+            BarMark(
+                x: .value("Zeitraum", bucket.id),
+                y: .value("Stunden", bucket.hours)
+            )
+            .cornerRadius(4)
+            .foregroundStyle(Color.theme)
+            .accessibilityLabel(bucket.accessibilityLabel)
+            .accessibilityValue("\(bucket.hours.formatted()) Stunden")
+        }
+        .chartXAxis {
+            AxisMarks(values: buckets.map(\.id)) { value in
+                AxisValueLabel {
+                    if let index = value.as(Int.self), buckets.indices.contains(index) {
+                        Text(buckets[index].label)
+                    }
+                }
+            }
+        }
+        .chartYAxis(.hidden)
+        .frame(height: 100)
+    }
+}
+
 extension ReportsView {
-    func getTotalTime(for timesheets: [KimaiTimesheet], weekday: Int) -> TimeInterval {
-        let timesheets = timesheets.filter { $0.getBeginDate()?.getWeekday() == weekday }
-        
-        return KimaiTimesheet.totalHours(of: timesheets) / 3600
+    private func reportBarChart(period: ReportChartPeriod) -> some View {
+        let entries = timesheetsFiltered.compactMap { timesheet -> ReportChartEntry? in
+            guard let date = timesheet.getBeginDate() else { return nil }
+            return ReportChartEntry(date: date, hours: (timesheet.calculateDuration() ?? 0) / 3600)
+        }
+        return ReportBarChart(buckets: ReportChartData.buckets(period: period, selectedDate: selectedDate, entries: entries))
     }
 }
