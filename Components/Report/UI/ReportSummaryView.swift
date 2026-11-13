@@ -17,7 +17,7 @@ struct ReportSummaryView: View {
         }
         
         let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = [.hour, .minute, .second]
+        formatter.allowedUnits = [.hour, .minute]
         return formatter.string(from: time) ?? "--"
     }
     

@@ -81,7 +81,7 @@ struct ReportDayTimeline: View {
                         Spacer(minLength: 4)
                         Text(customer?.name ?? "").font(.caption2).foregroundStyle(.secondary).lineLimit(1)
                         if timesheetChanges.contains(where: { $0.recordID == entry.id }) {
-                            Image(systemName: "arrow.triangle.2.circlepath").font(.caption2).accessibilityLabel("Noch nicht synchronisiert")
+                            Circle().fill(.red).frame(width: 7, height: 7).accessibilityLabel("Noch nicht synchronisiert")
                         }
                     }
                     HStack {
@@ -92,6 +92,7 @@ struct ReportDayTimeline: View {
                     .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 8).padding(.vertical, 4)
+                .frame(maxHeight: .infinity, alignment: .top)
                 Spacer(minLength: 0)
             }
             .background(Color.homeCard, in: RoundedRectangle(cornerRadius: 8))
