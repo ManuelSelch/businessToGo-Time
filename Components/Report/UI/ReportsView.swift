@@ -68,11 +68,12 @@ struct ReportsView: View {
     
     
     var body: some View {
-        VStack(spacing: 0){
+        let filtered = timesheetsFiltered
+        return VStack(spacing: 0){
             getHeader()
-            getReportChart()
+            getReportChart(timesheets: filtered)
                 .frame(maxHeight: 100)
-            getBody()
+            getBody(timesheets: filtered)
         }
         .onAppear {
             viewModel.processRecords(records: timesheets, projects: projects, customers: customers)
@@ -98,12 +99,12 @@ extension ReportsView {
     }
     
     @ViewBuilder
-    func getBody() -> some View {
+    func getBody(timesheets: [KimaiTimesheet]) -> some View {
         switch(selectedReportType) {
         case .day:
-            getTimesheets()
+            getTimesheets(timesheets: timesheets)
         case .week:
-            getTimesheets()
+            getTimesheets(timesheets: timesheets)
         case .month:
             getSummary()
         case .year:
@@ -153,9 +154,9 @@ extension ReportsView {
     
     
     @ViewBuilder
-    func getTimesheets() -> some View {
+    func getTimesheets(timesheets: [KimaiTimesheet]) -> some View {
        
-        if selectedReportType == .week && timesheetsFiltered.isEmpty {
+        if selectedReportType == .week && timesheets.isEmpty {
             VStack(spacing: 8) {
                 Image(systemName: "calendar")
                     .font(.title2)
@@ -166,7 +167,7 @@ extension ReportsView {
         } else {
             KimaiTimesheetsListView(
                 projects: projects,
-                timesheets: timesheetsFiltered,
+                timesheets: timesheets,
                 activities: activities,
                 timesheetChanges: timesheetChanges,
                 deleteTapped: deleteTapped,
@@ -177,19 +178,20 @@ extension ReportsView {
     }
     
     @ViewBuilder
-    func getReportChart() -> some View {
-        ReportSummaryView(timesheets: timesheetsFiltered)
+    func getReportChart(timesheets: [KimaiTimesheet]) -> some View {
+        ReportSummaryView(timesheets: timesheets)
         
         switch(selectedReportType){
         case .week:
+            let totals = weeklyTotals(for: timesheets)
             ChartBarView([
-                .init(id: 0, name: "Mo", value: getTotalTime(for: timesheetsFiltered, weekday: 2)),
-                .init(id: 1, name: "Di", value: getTotalTime(for: timesheetsFiltered, weekday: 3)),
-                .init(id: 2, name: "Mi", value: getTotalTime(for: timesheetsFiltered, weekday: 4)),
-                .init(id: 3, name: "Do", value: getTotalTime(for: timesheetsFiltered, weekday: 5)),
-                .init(id: 4, name: "Fr", value: getTotalTime(for: timesheetsFiltered, weekday: 6)),
-                .init(id: 5, name: "Sa", value: getTotalTime(for: timesheetsFiltered, weekday: 7)),
-                .init(id: 6, name: "So", value: getTotalTime(for: timesheetsFiltered, weekday: 1))
+                .init(id: 0, name: "Mo", value: totals[2]),
+                .init(id: 1, name: "Di", value: totals[3]),
+                .init(id: 2, name: "Mi", value: totals[4]),
+                .init(id: 3, name: "Do", value: totals[5]),
+                .init(id: 4, name: "Fr", value: totals[6]),
+                .init(id: 5, name: "Sa", value: totals[7]),
+                .init(id: 6, name: "So", value: totals[1])
             ], Color.theme)
         default:
             ChartPieView(customers.map { .init(id: $0.id, name: $0.name, value: 10) })
@@ -199,9 +201,12 @@ extension ReportsView {
 }
 
 extension ReportsView {
-    func getTotalTime(for timesheets: [KimaiTimesheet], weekday: Int) -> TimeInterval {
-        let timesheets = timesheets.filter { $0.getBeginDate()?.getWeekday() == weekday }
-        
-        return KimaiTimesheet.totalHours(of: timesheets) / 3600
+    func weeklyTotals(for timesheets: [KimaiTimesheet]) -> [TimeInterval] {
+        var totals = Array(repeating: TimeInterval.zero, count: 8)
+        for timesheet in timesheets {
+            guard let weekday = timesheet.getBeginDate()?.getWeekday(), (1...7).contains(weekday) else { continue }
+            totals[weekday] += timesheet.calculateDuration() ?? 0
+        }
+        return totals.map { $0 / 3600 }
     }
 }

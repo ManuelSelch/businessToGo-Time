@@ -4,7 +4,7 @@ Reviewed at `de9e71e`, 2026-10-25. This is the **S5 allocation/design deliverabl
 
 ## Weekly report benchmark
 
-[ReportsPerformanceTests](../../businessToGoTests/Report/UI/ReportsPerformanceTests.swift) adds a focused calculation check and XCTest wall-clock benchmark for the current production `ReportsView.getReportChart()` path. It uses 10,000 synthetic, closed one-hour entries over 100 days: the selected Monday–Sunday week contains 700 entries and 100 hours per weekday. Fixture generation is outside the measured block; no storage, accounts or server are used.
+[ReportsPerformanceTests](../../businessToGoTests/Report/UI/ReportsPerformanceTests.swift) adds a focused calculation check and XCTest wall-clock benchmark for the current production report selection and `ReportsView.getReportChart(timesheets:)` path. It uses 10,000 synthetic, closed one-hour entries over 100 days: the selected Monday–Sunday week contains 700 entries and 100 hours per weekday. Fixture generation is outside the measured block; no storage, accounts or server are used.
 
 Run the Pi `report-benchmark` suite, or:
 
@@ -16,9 +16,11 @@ xcodebuild test -project businessToGo.xcodeproj -scheme businessToGo \
   CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES
 ```
 
-XCTest repeats chart preparation and reports the average and variation in its test results (five recorded samples in the baseline run). Keep the same destination, time zone, toolchain and build settings for comparisons; set an Xcode performance baseline after a successful run. This measures chart-value/view construction, including repeated filtering and date parsing—not SwiftUI layout, drawing, scrolling, list grouping or full-report latency. It is not a speedup claim or a hard timing threshold.
+XCTest repeats chart preparation and reports the average and variation in its test results (five recorded samples in the baseline run). Keep the same destination, time zone, toolchain and build settings for comparisons; set an Xcode performance baseline after a successful run. This measures chart-value/view construction, including selection filtering and date parsing—not SwiftUI layout, drawing, scrolling, list grouping or full-report latency. It is not a speedup claim or a hard timing threshold.
 
 **Debug baseline (2026-11-13):** the `report-benchmark` pipeline passed both tests on iPhone 17 Simulator, iOS 26.1 / Xcode 26.1.1, with coverage disabled. Weekly chart preparation averaged **1.176 seconds**, relative standard deviation **0.389%**, with samples `[1.174667, 1.182843, 1.169003, 1.176143, 1.178728]` seconds. The calculation assertions passed. Compare future runs using the same Debug configuration; these unoptimized simulator timings do not represent Release performance on a phone. Xcode emitted duplicate Pulse class warnings; these remain unresolved. The result bundle is in the local DerivedData `businessToGo-eerqspkpeedwbphciljmluxlhhye/Logs/Test/Test-businessToGo-2026.11.13_20-32-16-+0100.xcresult` (not a durable repository artifact).
+
+**After filtering optimization (2026-11-13):** three Debug runs on the same iPhone 17 simulator averaged **0.159, 0.155, and 0.155 seconds** (five samples each), versus 1.176 seconds baseline—approximately 87% less time using the mean of the three run averages. Each run passed the calculation assertions. The timed path still includes selection filtering and chart construction, but not the full report or rendering. Duplicate Pulse class warnings remain.
 
 The Release pipeline was attempted with and without code coverage. Both builds failed before test execution while linking the pinned ReduxDebug product: unresolved `SwiftUIIntrospect.IntrospectModifier` / `NavigationViewWithStackStyleType` symbols. Dependency repair is outside this benchmark-only change; report behavior and the Release phone-install script remain unchanged.
 

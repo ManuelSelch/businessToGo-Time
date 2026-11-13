@@ -55,17 +55,22 @@ final class ReportsPerformanceTests: XCTestCase {
 
         XCTAssertEqual(filtered.map(\.id), (0..<10_000).filter { $0 % 100 < 7 })
         XCTAssertEqual(KimaiTimesheet.totalHours(of: filtered), 700 * 3_600, accuracy: 0.001)
+        let totals = report.weeklyTotals(for: filtered)
         for weekday in 1...7 {
-            XCTAssertEqual(report.getTotalTime(for: filtered, weekday: weekday), 100, accuracy: 0.001)
+            let previousTotal = KimaiTimesheet.totalHours(of: filtered.filter {
+                $0.getBeginDate()?.getWeekday() == weekday
+            }) / 3600
+            XCTAssertEqual(totals[weekday], previousTotal, accuracy: 0.001)
+            XCTAssertEqual(totals[weekday], 100, accuracy: 0.001)
         }
     }
 
     func testWeeklyChartPreparationPerformance() {
-        // Measure the real production path, including its repeated filtering.
+        // Measure the production chart path, including selection filtering.
         // Retain the result so the compiler cannot discard chart preparation.
         // This does not render SwiftUI, query storage, or contact Kimai.
         measure(metrics: [XCTClockMetric()]) {
-            preparedChart = report.getReportChart()
+            preparedChart = report.getReportChart(timesheets: report.timesheetsFiltered)
         }
     }
 }
