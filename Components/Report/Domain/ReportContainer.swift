@@ -31,6 +31,7 @@ struct ReportContainer: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     let count = [store.state.selectedCustomer, store.state.selectedProject, store.state.selectedTeam].compactMap { $0 }.count
                     HStack(spacing: 0) {
+                        SyncToolbarButton(status: store.state.syncStatus) { store.send(.sync) }
                         Button { router.showSheet(.report(.filter)) } label: {
                             Image(systemName: "slider.horizontal.3")
                                 .overlay(alignment: .topTrailing) {

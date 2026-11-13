@@ -41,23 +41,7 @@ struct ManagementHeaderView: View {
             case .assistant, .kimai(.activitySheet), .kimai(.customerSheet), .kimai(.projectSheet), .kimai(.timesheetSheet):
                 EmptyView()
             default:
-                switch(syncStatus) {
-                case .idle:
-                    Button(action: syncTapped){
-                        Image(systemName: "arrow.triangle.2.circlepath")
-                    }
-                    .buttonStyle(IconButtonStyle())
-                    .accessibilityLabel("Synchronisieren")
-                case .syncing:
-                    ProgressView()
-                case .failed:
-                    Button(action: syncTapped){
-                        Image(systemName: "exclamationmark.icloud.fill")
-                    }
-                    .buttonStyle(IconButtonStyle())
-                    .accessibilityLabel("Synchronisierung fehlgeschlagen, erneut versuchen")
-                    .foregroundStyle(Color.red)
-                }
+                SyncToolbarButton(status: syncStatus, action: syncTapped)
               
                 Button(action: {
                     switch(route){
@@ -94,5 +78,25 @@ struct ManagementHeaderView: View {
         }
         .font(.system(size: 15))
         .foregroundColor(Color.theme)
+    }
+}
+
+struct SyncToolbarButton: View {
+    let status: SyncStatus
+    let action: () -> Void
+
+    var body: some View {
+        if status == .syncing {
+            ProgressView()
+                .frame(width: ControlSpacing.touchTarget, height: ControlSpacing.touchTarget)
+                .accessibilityLabel("Synchronisierung läuft")
+        } else {
+            Button(action: action) {
+                Image(systemName: status == .failed ? "exclamationmark.icloud.fill" : "arrow.triangle.2.circlepath")
+            }
+            .buttonStyle(IconButtonStyle())
+            .foregroundStyle(status == .failed ? Color.red : Color.theme)
+            .accessibilityLabel(status == .failed ? "Synchronisierung fehlgeschlagen, erneut versuchen" : "Synchronisieren")
+        }
     }
 }

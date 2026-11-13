@@ -24,6 +24,7 @@ struct ReportComponent: ViewModel {
         var activities: [KimaiActivity]
         var customers: [KimaiCustomer]
         var teams: [KimaiTeam]
+        var syncStatus: SyncStatus
         
         var timesheetsChanges: [DatabaseChange]
         
@@ -41,6 +42,7 @@ struct ReportComponent: ViewModel {
                 activities: state.kimai.activities,
                 customers: state.kimai.customers,
                 teams: state.kimai.teams,
+                syncStatus: state.kimai.syncStatus,
                 
                 timesheetsChanges: state.kimai.timesheetChanges
             )
@@ -48,6 +50,7 @@ struct ReportComponent: ViewModel {
     }
     
     enum Action: ViewAction {
+        case sync
         case dateSelected(Date)
         case projectSelected(Int?)
         case filtersSelected(customer: Int?, project: Int?, team: Int?)
@@ -58,6 +61,7 @@ struct ReportComponent: ViewModel {
         
         var lifted: AppFeature.Action {
             switch self {
+            case .sync: return .sync
             case let .dateSelected(date): return .report(.dateSelected(date))
             case let .projectSelected(project): return .report(.projectSelected(project))
             case let .filtersSelected(customer, project, team): return .report(.filtersSelected(customer: customer, project: project, team: team))

@@ -31,18 +31,11 @@ struct TodayContainer: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 0) {
+                        SyncToolbarButton(status: store.state.syncStatus) { store.send(.sync) }
                         Button { router.showSheet(.management(.kimai(.timesheetSheet(.new)))) } label: {
                             Image(systemName: "play.fill")
                         }
                         .accessibilityLabel("Zeiteintrag erstellen")
-                        if store.state.syncStatus == .syncing {
-                            ProgressView().frame(width: ControlSpacing.touchTarget, height: ControlSpacing.touchTarget)
-                        } else {
-                            Button { store.send(.sync) } label: {
-                                Image(systemName: store.state.syncStatus == .failed ? "exclamationmark.icloud.fill" : "arrow.triangle.2.circlepath")
-                            }
-                            .accessibilityLabel(store.state.syncStatus == .failed ? "Synchronisierung fehlgeschlagen, erneut versuchen" : "Synchronisieren")
-                        }
                         Button { router.showSheet(.settings(.settings)) } label: { Image(systemName: "gear") }
                             .accessibilityLabel("Einstellungen")
                     }
