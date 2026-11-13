@@ -5,12 +5,9 @@ import KimaiCore
 import IntegrationCore
 
 struct ManagementHeaderView: View {
-    @Binding var selectedTeam: Int?
-
     let route: ManagementComponent.Route
 
     var projects: [KimaiProject]
-    var teams: [KimaiTeam]
     var syncStatus: SyncStatus
 
     let syncTapped: () -> ()
@@ -19,8 +16,8 @@ struct ManagementHeaderView: View {
     let settingsTapped: () -> ()
     
     init(
-        selectedTeam: Binding<Int?>, route: ManagementComponent.Route,
-        projects: [KimaiProject], teams: [KimaiTeam],
+        route: ManagementComponent.Route,
+        projects: [KimaiProject],
         syncStatus: SyncStatus,
         
         syncTapped: @escaping () -> Void,
@@ -28,10 +25,8 @@ struct ManagementHeaderView: View {
         playTapped: @escaping (KimaiTimesheet) -> Void,
         settingsTapped: @escaping () -> ()
     ) {
-        self._selectedTeam = selectedTeam
         self.route = route
         self.projects = projects
-        self.teams = teams
         self.syncStatus = syncStatus
         
         self.syncTapped = syncTapped
@@ -41,26 +36,7 @@ struct ManagementHeaderView: View {
     }
     
     var body: some View {
-        HStack {
-            
-            switch(route){
-            case .kimai(.customersList):
-                Picker("", selection: $selectedTeam) {
-                    Text("Alle Teams")
-                        .tag(nil as Int?)
-                    ForEach(teams, id: \.id) { team in
-                        Text(team.name)
-                            .tag(team.id as Int?)
-                    }
-                }
-                .pickerStyle(.menu)
-                .frame(width: 200)
-                .clipped()
-            
-                
-            default: EmptyView()
-            }
-            
+        HStack(spacing: 0) {
             switch(route) {
             case .assistant, .kimai(.activitySheet), .kimai(.customerSheet), .kimai(.projectSheet), .kimai(.timesheetSheet):
                 EmptyView()
@@ -70,12 +46,16 @@ struct ManagementHeaderView: View {
                     Button(action: syncTapped){
                         Image(systemName: "arrow.triangle.2.circlepath")
                     }
+                    .buttonStyle(IconButtonStyle())
+                    .accessibilityLabel("Synchronisieren")
                 case .syncing:
                     ProgressView()
                 case .failed:
                     Button(action: syncTapped){
                         Image(systemName: "exclamationmark.icloud.fill")
                     }
+                    .buttonStyle(IconButtonStyle())
+                    .accessibilityLabel("Synchronisierung fehlgeschlagen, erneut versuchen")
                     .foregroundStyle(Color.red)
                 }
               
@@ -100,10 +80,14 @@ struct ManagementHeaderView: View {
                 }){
                     Image(systemName: "play.fill")
                 }
+                .buttonStyle(IconButtonStyle())
+                .accessibilityLabel("Zeiteintrag erstellen")
                 
                 Button(action: settingsTapped) {
                     Image(systemName: "gear")
                 }
+                .buttonStyle(IconButtonStyle())
+                .accessibilityLabel("Einstellungen")
             }
       
             

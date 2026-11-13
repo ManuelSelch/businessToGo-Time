@@ -122,8 +122,9 @@ public struct KimaiTimesheetSheet: View {
                 var updatedTimesheet = timesheet
                 updatedTimesheet.project = selectedProject
                 updatedTimesheet.activity = selectedActivity
-                updatedTimesheet.begin = "\(startTime)"
-                updatedTimesheet.end = isEndTime ? "\(endTime)" : nil
+                let formatter = ISO8601DateFormatter()
+                updatedTimesheet.begin = formatter.string(from: startTime)
+                updatedTimesheet.end = isEndTime ? formatter.string(from: endTime) : nil
                 updatedTimesheet.description = description
                 
                 saveTapped(updatedTimesheet)

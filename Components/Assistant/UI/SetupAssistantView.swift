@@ -80,7 +80,7 @@ public struct SetupAssistantView: View {
             .padding(10)
             .background(currentStep == nil ? Color.theme : Color.themeGray)
             .cornerRadius(10)
-            .foregroundStyle(Color.background)
+            .foregroundStyle(currentStep == nil ? Color.themeForeground : Color.background)
             .disabled(currentStep != nil)
             
             

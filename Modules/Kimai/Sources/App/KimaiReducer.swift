@@ -75,6 +75,9 @@ public extension KimaiFeature {
             case .teamSelected(let team):
                 state.selectedTeam = team
                 
+            case let .searchChanged(query):
+                state.customerSearch = query
+
             case let .save(customer):
                 kimai.save(customer)
                 state.customers = kimai.customers.getCustomers().filter({$0.visible})

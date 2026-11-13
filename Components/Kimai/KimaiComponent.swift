@@ -10,6 +10,7 @@ struct KimaiComponent: ViewModel {
     
     struct State: ViewState {
         var selectedTeam: Int?
+        var customerSearch: String
         
         var customers: [KimaiCustomer]
         var projects: [KimaiProject] 
@@ -37,6 +38,7 @@ struct KimaiComponent: ViewModel {
         static func from(_ state: AppFeature.State) -> Self {
             return State(
                 selectedTeam: state.kimai.selectedTeam,
+                customerSearch: state.kimai.customerSearch,
                 
                 customers: state.kimai.customers,
                 projects: state.kimai.projects,
@@ -52,6 +54,8 @@ struct KimaiComponent: ViewModel {
     }
     
     enum Action: ViewAction {
+        case searchChanged(String)
+        case teamSelected(Int?)
         case customer(CustomerAction)
         case project(ProjectAction)
         case activity(ActivityAction)
@@ -61,6 +65,8 @@ struct KimaiComponent: ViewModel {
         
         var lifted: AppFeature.Action {
             switch self {
+            case let .searchChanged(query): return .kimai(.customer(.searchChanged(query)))
+            case let .teamSelected(team): return .kimai(.customer(.teamSelected(team)))
             case let .customer(action):
                 switch(action) {
                 case let .saveTapped(customer): return .kimai(.customer(.save(customer)))

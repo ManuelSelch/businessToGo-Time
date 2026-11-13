@@ -15,13 +15,15 @@
 ## Customers, projects, activities
 
 - The Projects tab is the management area: start from customers, select a customer to view its projects, then project details/activities.
-- Create/edit callbacks save local records. Deleting a customer with projects or a project with activities requests a blocking popup; other deletes ask confirmation.
+- The customer list combines team selection with case-insensitive customer/project-name search. The plus button opens customer creation; saving a nonblank name clears the filters, while cancelling leaves them unchanged. Customer edit and delete remain available through swipe actions.
+- Create/edit callbacks save local records. Customer team assignment is not editable in the form: outgoing customer requests omit teams. In [Kimai 2.72.0](https://github.com/kimai/kimai/blob/2.72.0/src/API/TeamController.php), team access is changed separately through the team/customer API, requiring permission to edit the team and manage customer permissions. The existing sync cannot safely retry a failed assignment after a successful customer creation, so assignment is not promised. Deleting a customer with projects or a project with activities requests a blocking popup; other deletes ask confirmation.
 - Previously synced customer/project/activity deletion is generally represented by visibility changes, while new unsynced records can be removed locally. This is not a universal server-delete API.
 - Local creation of related offline records is **not yet safe to promise**: ID remapping is disabled. Use synthetic records until fixed/tested.
 
 ## Time entry
 
-- Today routes customer → project → time-entry form; choose an activity, start/end dates, then Save.
+- Today shows the active entry and elapsed hours/minutes, plus up to three distinct recently used projects. Start or a recent project opens the time-entry form; Alle opens customer-first project navigation. Stop saves an end time. Entries with unparseable start dates cannot produce a duration or appear in recents.
+- Time-entry forms and Today’s stop action now write ISO 8601 timestamps. Previously saved timestamps in a different format are not migrated; other existing stop paths may still write that format.
 - The management/report sheet also edits project/activity/description and can leave the end unset. “Stop” reveals an end-time control; it is not verified pause/resume timer support.
 - Saved local timestamps currently conflict with parsing/API formats. Missing or incorrect report durations may be a date-format defect rather than lost server data.
 

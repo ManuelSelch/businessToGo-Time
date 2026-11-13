@@ -156,6 +156,7 @@ struct ReportsView: View {
             }
             getBody(timesheets: result.timesheets)
         }
+        .scrollContentBackground(.hidden)
         .onAppear {
             viewModel.processRecords(records: timesheets, projects: projects, customers: customers)
         }
