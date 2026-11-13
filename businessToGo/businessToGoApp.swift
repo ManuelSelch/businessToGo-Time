@@ -9,13 +9,10 @@ import Dependencies
 import PulseLogHandler
 
 import CommonServices
-import BoardingUI
-import BoardingCore
 
 
 struct businessToGoApp: App {
     let store: StoreOf<AppFeature>
-    @State private var featureFrames: [FeatureIdentifier: CGRect] = [:]
     
     static func onAction(_ action: MonitorMiddleware<AppFeature.Action, AppFeature.State>.ActionType) -> AppFeature.Action {
         switch(action) {

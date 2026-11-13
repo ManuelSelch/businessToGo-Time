@@ -5,7 +5,7 @@ Reviewed at `de9e71e`, 2026-10-25. **No app workflow is runtime-verified:** [app
 | Capability | Status | Source evidence / limits |
 |---|---|---|
 | Intro | Partial; runtime unverified | `Modules/Intro/Sources/Intro/IntroFeature.swift` supplies pages and first-run flag; `AppContainer` dispatches load and `AppFeature` opens intro sheet. Marketing includes future project management. |
-| Setup assistant | Partial; build blocked | `Components/Assistant` guides customer → project → activity → timesheet creation. App imports BoardingUI/Core for overlays; Boarding source is missing. |
+| Setup assistant | Partial; runtime unverified | `Components/Assistant` guides customer → project → activity → timesheet creation. The separate missing Boarding package was removed. |
 | Multiple accounts | Partial; isolation defects | `LoginContainer`, `LoginFeature`, `Account`, external KeychainService store/select account records and switch DBs. Count-based ID reuse and reset scope prevent claiming safe multi-account use. |
 | Kimai login | Broken validation / legacy auth | `KimaiService.login` returns true after URL construction, no credential probe; plugin uses deprecated headers. Latest-server compatibility unverified. |
 | Customers | Partial | `KimaiReducer`, `KimaiCustomerService`, customer sheets/lists: local CRUD, visibility filtering, team filter and project-dependent delete guard. Team cache persistence incomplete. |

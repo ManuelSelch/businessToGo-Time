@@ -1,5 +1,7 @@
 # Build and test baseline
 
+**Historical baseline:** the missing Boarding dependency was subsequently removed; see [developer setup](../development/SETUP.md) for current build guidance. The results below describe the reviewed revision.
+
 ## Evidence and completion
 
 - Reviewed revision: `de9e71e` (2026-10-25); no application/test changes during this review.

@@ -37,7 +37,6 @@ flowchart TD
     Shell --> Router
     Shell --> Redux
     Shell --> DI
-    Shell --> Boarding[BoardingUI / BoardingCore - missing source]
     Components --> LoginApp
     Components --> KimaiApp
     Components --> Intro
@@ -77,7 +76,6 @@ flowchart TD
 | Intro / Debug | Intro displays pages and consumes the first-run preference. Debug reducer writes mock/remote-log preferences. |
 | Integration | State and `onConnect` action exist, but reducer is no-op. `Sources/Services/IntegrationService.swift` is not included in declared targets and uses stale APIs. Do not treat it as active persistence. |
 | Common / Foundation | Common contains formatting, date helpers, preferences and UI resources. NetworkFoundation supplies a Moya decoding helper. RequestFoundation is legacy/unwired in the inspected app graph with undeclared dependencies. |
-| Boarding | Empty gitlink at a pinned commit, imported by app overlays; cannot document its implementation until recovered. |
 | External libraries | Redux/DI supply store/effect/global dependency behavior; OfflineSync owns repository/change tracking/sync; LoginService owns Keychain/current-account adapters. |
 
 The current structure is feature-oriented but not strict clean architecture: app reducers call concrete services, UI contains calculations, CommonCore contains a SwiftUI JSON viewer, and external persistence concerns appear in core models. These are observations, not authorization for a big-bang rewrite.

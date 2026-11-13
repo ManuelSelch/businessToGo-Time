@@ -8,7 +8,9 @@ Evidence is based on `de9e71e`, reviewed 2026-10-25. App-owned paths below are r
 
 ## High-priority findings
 
-### F1 — Fresh-checkout app build is blocked
+### F1 — Fresh-checkout app build was blocked
+
+**Update:** The user chose to remove the unavailable Boarding dependency. A subsequent generic iOS simulator app build succeeded; fresh-checkout and test execution remain unverified.
 - **Severity:** HIGH (delivery blocker). **Evidence:** reproduced build/build-for-testing failure; [baseline](BASELINE.md).
 - **Location:** `Modules/Boarding` gitlink, `businessToGo.xcodeproj/project.pbxproj:1334`, `businessToGo/businessToGoApp.swift`.
 - **Cause:** Boarding is a mode-160000 entry at `0035f14fd8b0149bbe3272f032c7f6a032a4ad46`, but no `.gitmodules` mapping/source is available. Xcode cannot find `BoardingUI`. The checkout and isolated export both lack its source.

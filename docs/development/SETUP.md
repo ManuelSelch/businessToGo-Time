@@ -11,8 +11,7 @@
 
 1. macOS with full Xcode selected via `xcode-select`, command-line tools, accepted Xcode license, and a latest-stable-iOS simulator runtime.
 2. Git/SwiftPM network access to GitHub dependencies. Router is referenced through `git@github.com:ManuelSelch/Router.git`; configure your SSH identity/access, or explicitly approve a project URL change rather than embedding credentials.
-3. Recover the missing Boarding source before expecting the app to build. The repository contains an empty gitlink with no submodule URL mapping. Ordinary `git submodule update --init` cannot repair that metadata.
-4. For physical devices, choose a development team and provisioning profile appropriate to your account. Simulator baseline builds disable signing; do not change bundle IDs/signing globally to fix a simulator error.
+3. For physical devices, choose a development team and provisioning profile appropriate to your account. Simulator baseline builds disable signing; do not change bundle IDs/signing globally to fix a simulator error.
 
 ## Inspect before building
 
@@ -25,7 +24,6 @@ xcodebuild -showsdks
 xcrun simctl list devices available
 ```
 
-The submodule command currently fails; this is a known blocker, not a successful setup check.
 
 ## Resolve and build
 
@@ -44,7 +42,7 @@ xcodebuild -project businessToGo.xcodeproj -scheme businessToGo \
   -disableAutomaticPackageResolution CODE_SIGNING_ALLOWED=NO build
 ```
 
-As reviewed, dependency resolution succeeds but the app build fails on missing `BoardingUI`. Do not delete product references just to get past it without recovering or explicitly replacing the feature. Further compilation errors may appear after this first graph blocker.
+The missing Boarding dependency was removed; a generic iOS simulator app build succeeded afterward. This does not verify app launch or test execution.
 
 For a widget-only compile check:
 
@@ -61,7 +59,7 @@ This succeeded with Xcode 26.1.1; it does not verify real time-tracking integrat
 
 Open [the Xcode project](../../businessToGo.xcodeproj), select the app scheme and a dedicated simulator, and Run **only after build recovery and test-mode isolation**. The app currently selects live/mock dependencies from persisted preferences, not a safe test launch contract. Remote logging must remain disabled.
 
-[Test strategy and target inventory](../testing/TESTING.md) explain what exists and what is proposed. There is no working one-command unit/integration/E2E runner yet. The app's test-build probe fails before execution; do not report that as a test pass. `swift test --package-path Common` is a macOS host build and currently fails; it is not a substitute for iOS simulator tests.
+[Test strategy and target inventory](../testing/TESTING.md) explain what exists and what is proposed. There is no working one-command unit/integration/E2E runner yet. The app's generic simulator build-for-testing succeeds after Boarding removal, but no tests were executed. The earlier `swift test --package-path Common` macOS host build failed; it is not a substitute for iOS simulator tests.
 
 ## Compatibility server
 
@@ -73,7 +71,6 @@ The existing app uses deprecated authentication. A modern API token alone will *
 
 | Symptom | Meaning / next action |
 |---|---|
-| Missing `BoardingUI` | Recover Boarding gitlink source and metadata; see baseline |
 | Router checkout fails | Check GitHub SSH access; do not place private keys in the repository |
 | `Bundle.module` error | CommonUI resource processing is undeclared; requires a scoped manifest fix |
 | SwiftUI availability during `swift test` | Host macOS platform is undeclared; use agreed simulator suites after recovery, not blanket availability annotations |

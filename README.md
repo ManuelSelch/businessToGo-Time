@@ -4,7 +4,7 @@ SwiftUI iOS app for Kimai-backed time tracking, with local SQLite/change trackin
 
 ## Current status
 
-- **App build blocked:** the Boarding package is an empty gitlink without a `.gitmodules` mapping. Remote dependencies resolve; the widget template compiles separately. No app test or runtime journey has passed in this review.
+- **Build status:** the missing Boarding dependency was removed; a generic iOS simulator app build succeeds. App tests and runtime journeys remain unverified.
 - **Kimai compatibility needs work:** the app uses deprecated `X-AUTH-*` authentication; current Kimai documents Bearer API tokens.
 - **Offline/sync and reporting are partial:** source review found data-integrity and date/reporting defects. Do not assume queued changes, retries or report totals are reliable yet.
 - **Taiga is partial:** account configuration/scaffolding exists, not completed project management. Backlog/Kanban work is planned separately.

@@ -1,6 +1,6 @@
 # Test strategy and inventory
 
-Reviewed at `de9e71e`, 2026-10-25. This is the **S5 allocation/design deliverable**, not an implemented test harness. See [proposed design](../app-review/DESIGN.md) for approval gates and [baseline](../app-review/BASELINE.md) for actual command results. No test execution passed: app test build and the Common host test build failed before execution.
+Reviewed at `de9e71e`, 2026-10-25. This is the **S5 allocation/design deliverable**, not an implemented test harness. See [proposed design](../app-review/DESIGN.md) for approval gates and [baseline](../app-review/BASELINE.md) for actual command results. No test execution passed in that review: app test build and the Common host test build failed before execution. After Boarding removal, the app's generic simulator build-for-testing succeeded; tests were not executed.
 
 ## Suite boundaries
 
@@ -22,7 +22,7 @@ Reviewed at `de9e71e`, 2026-10-25. This is the **S5 allocation/design deliverabl
 - Common, NetworkFoundation, RequestFoundation, Intro and Login test files contain six `testExample` methods in total, with no meaningful behavior assertions found by source inspection. Login's folder/target named `UITests` is a package XCTest target importing LoginUI, **not** an XCUITest application runner.
 - Total discoverable source methods in the reviewed checkout: ten (four Kimai/app examples, six template methods). Runtime test discovery/count is unverified.
 - `businessToGo.xctestplan` names only the app test target. The shared scheme retains a skipped, absent `businessToGoUITests` native target. There is no active E2E suite or integration driver layer.
-- Boarding source/tests cannot be inspected because its gitlink source is missing. Validate every package target after build recovery rather than assuming the root scheme covers them.
+- The missing Boarding package was removed; validate every remaining package target rather than assuming the root scheme covers them.
 
 ## Reducer and UI projection allocation
 
@@ -37,7 +37,6 @@ All entries below are planned unless explicitly described above as existing exam
 | `Modules/Intro/.../IntroFeature` | Unit: first-run preference consumed once, expected delegate/no-op. Isolated preference adapter. |
 | `Modules/Debug/.../DebugFeature` | Unit: state/preference updates for remote logging and mock mode. Spy preference adapter. Test app restart semantics separately; do not assert toggle changes global mode immediately. |
 | `Modules/Integration/.../IntegrationFeature` | Unit characterization: current `onConnect` is no-op. Do not write tests claiming persistence or Taiga API behavior; feature completion is separate work. |
-| Boarding | Unknown until source recovered; inventory reducer/overlay behavior then. |
 | `Foundation/RequestFoundation/.../RequestFeature` | Legacy candidate, not active app reducer. First resolve whether to repair/reuse or explicitly retire; no invented active coverage. |
 | Login/Kimai/Today/Management/Report/Settings/Assistant components | Unit: `State.from` projections and lifted action mapping, including reset/logout/delete delegates. These are ViewModel adapters, not extra middleware/reducers. |
 | `ReportsView` / `ReportViewModel`, `DateExtension`, `KimaiTimesheet`, `MyFormatter` | Unit: selection filtering, grouped totals, time strings, open entries, week-based years, DST, midnight, rounding and invalid dates. UI-owned calculations need minimal extraction/injection before testing without a UI. |
@@ -49,7 +48,7 @@ There is **one configured middleware**: external `MonitorMiddleware.handle`, cre
 - App unit tests: reset/jump-to mapping in `businessToGoApp.onAction`, `.setState` exclusion in `showAction`, remote logging default-off and outbound secret-redaction contract after a separately approved fix.
 - Pinned Redux middleware contract: updated-state/action observation, emissions back to store, disabled logging produces no outbound requests, bounded subscription settlement. Real remote sockets are forbidden in ordinary suites.
 - A fake monitor/socket boundary is needed to test enabled transmission safely; the library currently constructs its own private client. Do not enable production middleware just to obtain test coverage. An external injection seam/fix needs its own approved change if enabled-path tests require it.
-- No other middleware was found in app registration. Inventory newly recovered Boarding code, but do not create artificial middleware layers to satisfy the test plan.
+- No other middleware was found in app registration; do not create artificial middleware layers to satisfy the test plan.
 
 ## Service and adapter allocation
 
