@@ -30,9 +30,14 @@ struct ReportFilterView: View {
                         Text("Alle Kunden").tag(Int?.none)
                         ForEach(customers, id: \.id) { Text($0.name).tag(Optional($0.id)) }
                     }
+                    .onChange(of: customer) { selectedCustomer in
+                        if let project, !projects.contains(where: { $0.id == project && (selectedCustomer == nil || $0.customer == selectedCustomer) }) {
+                            self.project = nil
+                        }
+                    }
                     Picker("Projekt", selection: $project) {
                         Text("Alle Projekte").tag(Int?.none)
-                        ForEach(projects, id: \.id) { Text($0.name).tag(Optional($0.id)) }
+                        ForEach(projects.filter { customer == nil || $0.customer == customer }, id: \.id) { Text($0.name).tag(Optional($0.id)) }
                     }
                     Picker("Team", selection: $team) {
                         Text("Alle Teams").tag(Int?.none)
