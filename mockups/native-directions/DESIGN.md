@@ -1,7 +1,7 @@
 # Unified native UI mockup
 
-- Revision: 7. Status: in review; not approved for production implementation.
-- Current feedback: replace the labeled add-time button with a play icon.
+- Revision: 8. Status: in review; not approved for production implementation.
+- Current feedback: restore the omitted create-customer action in Projects, separate from the time-entry play icon.
 - Goal: refine one native-feeling iOS design using synthetic time-tracking content.
 - Scope: isolated browser prototypes only. SwiftUI, app dependencies and existing approved weekly-report mockup are unchanged.
 - Platform assumption: iPhone first; one centered phone canvas, width constrained to the available screen. Browser components approximate iOS, not UIKit/SwiftUI gestures, materials or Dynamic Type.
@@ -29,6 +29,7 @@ Read current dashboard, Today routes, app router, report/header, management tool
 - Active timer: teal surface with mint duration, status dot and stop control. Retains explicit “Stoppen” text and square icon; idle timer stays neutral.
 - B's emphasis: 34px duration with tabular numerals and a prominent teal/mint timer panel with moderate 18px padding.
 - C's density: 58px rows, compact section spacing, unboxed project icons and a subtly highlighted selected tab. No variant selector or side-by-side A/B/C panels remain.
+- Projects has a 44px plus action beside “Kunden”, accessible as “Neuen Kunden erstellen”, visible even with no results. It opens a customer form with required nonblank name and optional teams, initially preselecting the active team. Save creates a synthetic customer with no projects in local React state, clears search/team filters so the new row is visible, and leaves the timer unchanged. Cancel adds nothing. Created customers participate in subsequent search/team filtering; opening one shows a demo notice that no projects exist. Full customer details/project creation are not modeled. Reload/global review controls discard created customers.
 - Management rows no longer show activity counts. Reports uses 80px bars (previously 135px), smaller total text and reduced card padding to expose more entries.
 
 ## Review states and interactions
@@ -63,4 +64,4 @@ Read current dashboard, Today routes, app router, report/header, management tool
 - HTTP HTML/module/style serving checked; startup log inspected. No browser execution or visual verification performed.
 - App pipeline intentionally not required for isolated mockups; no production verification claimed.
 - npm install reports one high-severity development dependency advisory; no automatic upgrades. Production-only audit reports zero.
-- Approval evidence: user requested consolidating the mockups and removing the Home daily total. This authorizes revision 4 mockup edits only, not production implementation. User also requested the proposed team-filter improvement in the mockup. Await explicit review/approval of revision 7.
+- Approval evidence: user requested consolidating the mockups and removing the Home daily total. This authorizes revision 4 mockup edits only, not production implementation. User also requested the proposed team-filter improvement in the mockup. Await explicit review/approval of revision 8.
