@@ -17,9 +17,9 @@ class FoundationColorsTest(unittest.TestCase):
         self.assertEqual(self.color("theme", "dark"), (132, 226, 177))
 
     def test_home_cards_are_distinct_from_the_canvas_in_both_appearances(self):
-        self.assertEqual(self.color("homeCanvas", "light"), (233, 239, 235))
+        self.assertEqual(self.color("screenCanvas", "light"), (241, 243, 242))
         self.assertEqual(self.color("homeCard", "light"), (255, 255, 255))
-        self.assertEqual(self.color("homeCanvas", "dark"), (13, 22, 19))
+        self.assertEqual(self.color("screenCanvas", "dark"), (18, 22, 20))
         self.assertEqual(self.color("homeCard", "dark"), (32, 43, 39))
 
     def test_action_foreground_contrasts_with_action_color(self):

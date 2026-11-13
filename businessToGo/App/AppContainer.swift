@@ -23,7 +23,12 @@ struct AppContainer: View {
             },
             content: { route in
                 ZStack(alignment: .top)  {
-                    Color.background.edgesIgnoringSafeArea(.all)
+                    switch route {
+                    case .today(.today), .management(.kimai(.customersList)), .report(.reports):
+                        Color.screenCanvas.ignoresSafeArea()
+                    default:
+                        Color.background.ignoresSafeArea()
+                    }
                     route.view(store)
                 }
             },

@@ -74,6 +74,7 @@ struct ReportsView: View {
                 .frame(maxHeight: 100)
             getBody()
         }
+        .scrollContentBackground(.hidden)
         .onAppear {
             viewModel.processRecords(records: timesheets, projects: projects, customers: customers)
         }

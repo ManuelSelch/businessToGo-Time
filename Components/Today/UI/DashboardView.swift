@@ -71,7 +71,7 @@ struct DashboardView: View {
             }
             .padding(18)
         }
-        .background(Color.homeCanvas.ignoresSafeArea())
+        .background(Color.screenCanvas.ignoresSafeArea())
     }
 
     private var timerPanel: some View {
