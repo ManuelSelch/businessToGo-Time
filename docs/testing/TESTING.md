@@ -2,6 +2,12 @@
 
 Reviewed at `de9e71e`, 2026-10-25. This is the **S5 allocation/design deliverable**, not an implemented test harness. See [proposed design](../app-review/DESIGN.md) for approval gates and [baseline](../app-review/BASELINE.md) for actual command results. No test execution passed in that review: app test build and the Common host test build failed before execution. After Boarding removal, the app's generic simulator build-for-testing succeeded; tests were not executed.
 
+## Local unit suite
+
+The Pi `unit` suite runs the standalone customer-search, home-state and report-chart checks, the Python UI color checks, and the Common package's simulator XCTest suite. It runs after agent changes; the existing `report-benchmark` remains a separate manual suite. The simulator job requires an iPhone 17 simulator and Xcode. The standalone checks can also be run with `bash tests/run-unit-tests.sh`.
+
+The older Kimai reducer tests are not included: they exercise saves/deletes without established isolated storage or dependency configuration. Placeholder tests in other packages and future integration/UI scenarios are not covered by this suite.
+
 ## Weekly report benchmark
 
 [ReportsPerformanceTests](../../businessToGoTests/Report/UI/ReportsPerformanceTests.swift) adds a focused calculation check and XCTest wall-clock benchmark for the current production report selection and `ReportsView.getReportChart(timesheets:)` path. It uses 10,000 synthetic, closed one-hour entries over 100 days: the selected Monday–Sunday week contains 700 entries and 100 hours per weekday. Fixture generation is outside the measured block; no storage, accounts or server are used.

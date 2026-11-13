@@ -4,3 +4,15 @@ suites:
     cwd: .
     timeoutSeconds: 1200
     auto: manual
+  unit:
+    cwd: .
+    timeoutSeconds: 300
+    auto: after-agent
+    jobs:
+      standalone:
+        command: [bash, tests/run-unit-tests.sh]
+        timeoutSeconds: 120
+      common:
+        command: [xcodebuild, test, -scheme, Common-Package, -destination, "platform=iOS Simulator,name=iPhone 17", -parallel-testing-enabled, NO, CODE_SIGNING_ALLOWED=NO]
+        cwd: Common
+        timeoutSeconds: 600
