@@ -44,20 +44,11 @@ struct DashboardView: View {
                     VStack(spacing: 0) {
                         ForEach(recentProjects) { project in
                             Button { projectTapped(project) } label: {
-                                HStack(spacing: 12) {
-                                    Image(systemName: "folder")
-                                        .foregroundStyle(Color.theme)
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(project.name).font(.subheadline.weight(.semibold))
-                                        if let customer = customers.first(where: { $0.id == project.customer }) {
-                                            Text(customer.name).font(.caption).foregroundStyle(.secondary)
-                                        }
-                                    }
-                                    Spacer()
-                                    Image(systemName: "chevron.right").foregroundStyle(.secondary)
-                                }
-                                .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
-                                .contentShape(Rectangle())
+                                FolderRow(
+                                    title: project.name,
+                                    subtitle: customers.first(where: { $0.id == project.customer })?.name,
+                                    color: Color.theme
+                                )
                             }
                             .buttonStyle(.plain)
                             if project.id != recentProjects.last?.id { Divider() }

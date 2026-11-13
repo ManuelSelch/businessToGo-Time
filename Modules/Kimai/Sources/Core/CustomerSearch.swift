@@ -6,6 +6,12 @@ public enum CustomerSearch {
         return matches(name: name, projectNames: projectNames, query: query)
     }
 
+    public static func projectMatches(customerName: String, projectName: String, query: String) -> Bool {
+        let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        if query.isEmpty { return true }
+        return customerName.localizedCaseInsensitiveContains(query) || projectName.localizedCaseInsensitiveContains(query)
+    }
+
     public static func matches(name: String, projectNames: [String], query: String) -> Bool {
         let query = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if query.isEmpty { return true }

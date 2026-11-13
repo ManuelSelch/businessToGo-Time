@@ -21,14 +21,22 @@ struct KimaiContainer: View {
                         let projects = store.state.projects.filter { $0.customer == customer.id }.map(\.name)
                         return CustomerSearch.includes(name: customer.name, projectNames: projects, teams: customer.teams, selectedTeam: store.state.selectedTeam, query: store.state.customerSearch)
                     },
+                    projects: store.state.projects,
                     search: store.binding(for: \.customerSearch, action: { .searchChanged($0) }),
                     hasFilters: store.state.selectedTeam != nil || !store.state.customerSearch.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                     resetFilters: { store.send(.teamSelected(nil)); store.send(.searchChanged("")) },
                     
-                    customerTapped: { router.push(.management(.kimai(.projectsList(for: $0)))) },
                     customerEditTapped: { router.showSheet(.management(.kimai(.customerSheet($0)))) },
                     customerDeleteTapped: { store.send(.customer(.deleteTapped($0))) },
-                    customerCreated: { router.showSheet(.management(.kimai(.customerSheet(.new)))) }
+                    customerCreated: { router.showSheet(.management(.kimai(.customerSheet(.new)))) },
+                    projectTapped: { router.push(.management(.kimai(.projectDetail($0.id)))) },
+                    projectEditTapped: { router.showSheet(.management(.kimai(.projectSheet($0)))) },
+                    projectDeleteTapped: { store.send(.project(.deleteTapped($0))) },
+                    projectCreated: { customer in
+                        var project = KimaiProject.new
+                        project.customer = customer.id
+                        router.showSheet(.management(.kimai(.projectSheet(project))))
+                    }
                 )
             case let .customerSheet(customer):
                 KimaiCustomerSheet(

@@ -84,6 +84,7 @@ The current structure is feature-oriented but not strict clean architecture: app
 
 - `businessToGoApp.store` owns `StoreOf<AppFeature>` for the app lifetime. Root state contains `login`, `kimai`, `integration`, `report`, `intro`, `debug`.
 - Kimai state caches customer/project/activity/timesheet/team/user arrays, pending-change arrays, selected team and sync status. SQLite is persistent storage; state arrays are projections/snapshots, not a transactional mirror.
+- The Projects tab groups projects under customer rows. Customer and project actions use existing sheets and delete flows; project creation starts with the selected customer. Search retains all projects for matching customers and otherwise only matching projects, while the selected team still filters customers. The Today and Projects views share the folder-row presentation.
 - Report state owns selected date/project/period and month names. Filtering/aggregation also exists in `ReportsView`, `ReportViewModel` and model helpers.
 - Redux 1.2.14 `Store.send` reduces synchronously, subscribes to the returned Combine effect, then invokes configured middlewares with updated state/action. Emitted actions re-enter `send` on the main queue. `Effect<Action>` is `AnyPublisher<Action, Error>`; `.run` creates a Task inside a Future.
 - The only configured middleware is `MonitorMiddleware.handle`. Side effects in Login/Kimai reducers are not separate middleware implementations.

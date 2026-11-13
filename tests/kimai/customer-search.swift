@@ -3,6 +3,10 @@ import Foundation
 @main
 struct CustomerSearchTests {
     static func main() {
+        precondition(CustomerSearch.projectMatches(customerName: "Nord Studio", projectName: "Website", query: "website"))
+        precondition(!CustomerSearch.projectMatches(customerName: "Nord Studio", projectName: "Beratung", query: "website"))
+        precondition(CustomerSearch.projectMatches(customerName: "Nord Studio", projectName: "Beratung", query: " nord "))
+        precondition(CustomerSearch.projectMatches(customerName: "Nord Studio", projectName: "Beratung", query: " "))
         precondition(CustomerSearch.matches(name: "Nord Studio", projectNames: ["Mobile App"], query: "  mObIlE  "))
         precondition(CustomerSearch.matches(name: "Nord Studio", projectNames: [], query: "nord"))
         precondition(CustomerSearch.matches(name: "Nord Studio", projectNames: [], query: "  "))
