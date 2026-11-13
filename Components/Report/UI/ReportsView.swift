@@ -1,8 +1,10 @@
 import SwiftUI
+import Charts
 import OfflineSyncCore
 import MyChart
 
 import CommonCore
+import CommonUI
 import KimaiCore
 import KimaiUI
 
@@ -71,7 +73,6 @@ struct ReportsView: View {
         VStack(spacing: 0){
             getHeader()
             getReportChart()
-                .frame(maxHeight: 100)
             getBody()
         }
         .scrollContentBackground(.hidden)
@@ -179,23 +180,35 @@ extension ReportsView {
     
     @ViewBuilder
     func getReportChart() -> some View {
-        ReportSummaryView(timesheets: timesheetsFiltered)
-        
-        switch(selectedReportType){
-        case .week:
-            ChartBarView([
-                .init(id: 0, name: "Mo", value: getTotalTime(for: timesheetsFiltered, weekday: 2)),
-                .init(id: 1, name: "Di", value: getTotalTime(for: timesheetsFiltered, weekday: 3)),
-                .init(id: 2, name: "Mi", value: getTotalTime(for: timesheetsFiltered, weekday: 4)),
-                .init(id: 3, name: "Do", value: getTotalTime(for: timesheetsFiltered, weekday: 5)),
-                .init(id: 4, name: "Fr", value: getTotalTime(for: timesheetsFiltered, weekday: 6)),
-                .init(id: 5, name: "Sa", value: getTotalTime(for: timesheetsFiltered, weekday: 7)),
-                .init(id: 6, name: "So", value: getTotalTime(for: timesheetsFiltered, weekday: 1))
-            ], Color.theme)
-        default:
-            ChartPieView(customers.map { .init(id: $0.id, name: $0.name, value: 10) })
-                .chartLegend(.hidden)
+        VStack(alignment: .leading, spacing: 12) {
+            ReportSummaryView(timesheets: timesheetsFiltered)
+
+            switch(selectedReportType){
+            case .week:
+                let days = [("Mo", 2), ("Di", 3), ("Mi", 4), ("Do", 5), ("Fr", 6), ("Sa", 7), ("So", 1)]
+                Chart {
+                    ForEach(days, id: \.1) { day in
+                        BarMark(
+                            x: .value("Tag", day.0),
+                            y: .value("Stunden", getTotalTime(for: timesheetsFiltered, weekday: day.1))
+                        )
+                        .cornerRadius(4)
+                        .foregroundStyle(Color.theme)
+                    }
+                }
+                .chartXAxis { AxisMarks { _ in AxisValueLabel() } }
+                .chartYAxis(.hidden)
+                .frame(height: 100)
+            default:
+                ChartPieView(customers.map { .init(id: $0.id, name: $0.name, value: 10) })
+                    .chartLegend(.hidden)
+                    .frame(height: 100)
+            }
         }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.homeCard, in: RoundedRectangle(cornerRadius: 15))
+        .padding(.horizontal, 16)
     }
 }
 

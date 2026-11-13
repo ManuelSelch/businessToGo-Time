@@ -31,7 +31,7 @@ struct ReportSummaryView: View {
                     .foregroundStyle(Color.textHeaderSecondary)
                     .font(.system(.subheadline))
                 Text(totalTime)
-                    .font(.system(size: 20, weight: .heavy))
+                    .font(.headline.monospacedDigit())
             }
             
             
@@ -42,11 +42,10 @@ struct ReportSummaryView: View {
                     .foregroundStyle(Color.textHeaderSecondary)
                     .font(.system(.subheadline))
                 Text("\(totalRate)")
-                    .font(.system(size: 20, weight: .heavy))
+                    .font(.headline.monospacedDigit())
             }
             
         }
-        .padding()
     }
 }
 
