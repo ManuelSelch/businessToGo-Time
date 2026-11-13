@@ -22,7 +22,8 @@
 
 ## Time entry
 
-- Today routes customer → project → time-entry form; choose an activity, start/end dates, then Save.
+- Today shows the active entry and elapsed hours/minutes, plus up to three distinct recently used projects. Start or a recent project opens the time-entry form; Alle opens customer-first project navigation. Stop saves an end time. Entries with unparseable start dates cannot produce a duration or appear in recents.
+- Time-entry forms and Today’s stop action now write ISO 8601 timestamps. Previously saved timestamps in a different format are not migrated; other existing stop paths may still write that format.
 - The management/report sheet also edits project/activity/description and can leave the end unset. “Stop” reveals an end-time control; it is not verified pause/resume timer support.
 - Saved local timestamps currently conflict with parsing/API formats. Missing or incorrect report durations may be a date-format defect rather than lost server data.
 

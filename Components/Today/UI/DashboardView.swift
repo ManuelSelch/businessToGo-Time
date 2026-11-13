@@ -1,5 +1,4 @@
 import SwiftUI
-import MyChart
 
 import CommonUI
 import KimaiCore
@@ -8,113 +7,121 @@ struct DashboardView: View {
     let timesheets: [KimaiTimesheet]
     let customers: [KimaiCustomer]
     let projects: [KimaiProject]
-    
-    let customerTapped: (KimaiCustomer) -> ()
-    
+    let activities: [KimaiActivity]
+    let projectTapped: (KimaiProject) -> Void
+    let browseTapped: () -> Void
+    let createTapped: () -> Void
+    let stopTapped: (KimaiTimesheet) -> Void
+
+    private var active: KimaiTimesheet? {
+        timesheets.first { $0.end == nil }
+    }
+
+    private var recentProjects: [KimaiProject] {
+        let ids = HomeState.recentProjectIDs(
+            timesheets.map { HomeEntry(projectID: $0.project, started: $0.getBeginDate()) },
+            validProjectIDs: Set(projects.map(\.id))
+        )
+        return ids.compactMap { id in projects.first { $0.id == id } }
+    }
+
     var body: some View {
-        ZStack(alignment: .top) {
-            Image.background
-                .resizable()
-                .scaledToFill()
-                .frame(height: 250)
-                .edgesIgnoringSafeArea(.all)
-   
-            
-            VStack {
-                Text("Hi Name")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .font(.system(.title2, weight: .bold))
-                Text("Guten Morgen")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .foregroundStyle(.secondary)
-                    .font(.caption)
-                
-                ZStack {
-                    Rectangle()
-                        .fill(Color.themeGray.opacity(0.9))
-                        .clipShape(.rect(cornerRadius: 10))
-                        .shadow(color: Color.black.opacity(0.5), radius: 5)
-                        
-                    
-                    VStack {
-                        ReportSummaryView(timesheets: timesheets)
-                        
-                        ChartBarView([
-                            .init(id: 0, name: "Mo", value: getTotalTime(for: timesheets, weekday: 2)),
-                            .init(id: 1, name: "Di", value: getTotalTime(for: timesheets, weekday: 3)),
-                            .init(id: 2, name: "Mi", value: getTotalTime(for: timesheets, weekday: 4)),
-                            .init(id: 3, name: "Do", value: getTotalTime(for: timesheets, weekday: 5)),
-                            .init(id: 4, name: "Fr", value: getTotalTime(for: timesheets, weekday: 6)),
-                            .init(id: 5, name: "Sa", value: getTotalTime(for: timesheets, weekday: 7)),
-                            .init(id: 6, name: "So", value: getTotalTime(for: timesheets, weekday: 1))
-                        ], Color.theme)
-                    }
+        ScrollView {
+            VStack(alignment: .leading, spacing: 18) {
+                timerPanel
+
+                HStack {
+                    Text("Letzte Projekte").font(.headline)
+                    Spacer()
+                    Button("Alle", action: browseTapped)
+                        .accessibilityLabel("Alle Kunden und Projekte anzeigen")
                 }
-                .frame(height: 190)
-                
-               
-                
-                ScrollView(showsIndicators: false) {
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .center, spacing: 0) {
-                        ForEach(customers) { customer in
-                            Button(action: { customerTapped(customer) }) {
-                                ZStack {
-                                    Rectangle()
-                                        .fill(Color.themeGray)
-                                        .clipShape(.rect(cornerRadius: 10))
-                                        .aspectRatio(1/1, contentMode: .fit)
-                                        // .frame(maxWidth: 100)
-                                        .shadow(color: Color.black.opacity(0.5), radius: 2)
-                                    
-                                    VStack(alignment: .leading) {
-                                        HStack {
-                                            if let color = customer.color, color != "" {
-                                                Circle()
-                                                    .foregroundColor(.clear)
-                                                    .frame(width: 20)
-                                                    .overlay(
-                                                        Circle()
-                                                            .stroke(Color(hex: color), lineWidth: 2)
-                                                    )
-                                            }
-                                            
-                                            Spacer()
+
+                if recentProjects.isEmpty {
+                    Text("Noch keine zuletzt verwendeten Projekte.")
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(recentProjects) { project in
+                            Button { projectTapped(project) } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: "folder")
+                                        .foregroundStyle(Color.theme)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(project.name).font(.subheadline.weight(.semibold))
+                                        if let customer = customers.first(where: { $0.id == project.customer }) {
+                                            Text(customer.name).font(.caption).foregroundStyle(.secondary)
                                         }
-                                        
-                                        Spacer()
-                                        
-                                        Text(customer.name)
-                                            .font(.system(.footnote))
-                                            .foregroundStyle(Color.theme)
-                                            .bold()
-                                        
-                                        let projectCount = projects.filter({$0.customer == customer.id}).count
-                                        let label = projectCount == 1 ? "Projekt" : "Projekte"
-                                        
-                                        
-                                        Text("\(projectCount) \(label)")
-                                            .font(.system(.caption))
-                                            .foregroundStyle(Color.textHeaderSecondary)
-                                        
                                     }
-                                    .padding()
+                                    Spacer()
+                                    Image(systemName: "chevron.right").foregroundStyle(.secondary)
                                 }
+                                .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+                                .contentShape(Rectangle())
                             }
-                            .padding()
+                            .buttonStyle(.plain)
+                            if project.id != recentProjects.last?.id { Divider() }
                         }
                     }
-                    .padding(.top, 30)
+                    .padding(.horizontal, 12)
+                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 9))
                 }
             }
-            .padding([.top, .horizontal], 30)
+            .padding(18)
         }
     }
-}
 
-extension DashboardView {
-    func getTotalTime(for timesheets: [KimaiTimesheet], weekday: Int) -> TimeInterval {
-        let timesheets = timesheets.filter { $0.getBeginDate()?.getWeekday() == weekday }
-        
-        return KimaiTimesheet.totalHours(of: timesheets) / 3600
+    private var timerPanel: some View {
+        let teal = Color(red: 7 / 255, green: 62 / 255, blue: 67 / 255)
+        let mint = Color(red: 132 / 255, green: 226 / 255, blue: 177 / 255)
+        let project = projects.first { $0.id == active?.project }
+        let customer = customers.first { $0.id == project?.customer }
+        let activity = activities.first { $0.id == active?.activity }
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(active == nil ? "BEREIT, WENN DU ES BIST" : "ZEIT LÄUFT")
+                    .font(.caption2.weight(.bold))
+                Spacer()
+                if let customer { Text(customer.name).font(.caption) }
+            }
+            .foregroundStyle(active == nil ? Color.secondary : Color.white.opacity(0.8))
+
+            Text(project?.name ?? (active == nil ? "Zeiterfassung" : "Unbekanntes Projekt"))
+                .font(.headline)
+            if let activity { Text(activity.name).font(.subheadline).opacity(0.8) }
+
+            HStack {
+                TimelineView(.periodic(from: .now, by: 60)) { context in
+                    if let active {
+                        if let start = active.getBeginDate() {
+                            Text(HomeState.duration(since: start, now: context.date))
+                        } else {
+                            Text("–:–").accessibilityLabel("Startzeit nicht verfügbar")
+                        }
+                    } else {
+                        Text("00:00")
+                    }
+                }
+                .font(.system(size: 34, weight: .medium, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(active == nil ? Color.primary : mint)
+                Spacer()
+                if let active {
+                    Button { stopTapped(active) } label: { Label("Stoppen", systemImage: "stop.fill") }
+                        .buttonStyle(.borderedProminent)
+                        .tint(mint)
+                        .foregroundStyle(teal)
+                } else {
+                    Button(action: createTapped) { Label("Starten", systemImage: "play.fill") }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.theme)
+                }
+            }
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .foregroundStyle(active == nil ? Color.primary : Color.white)
+        .background(active == nil ? Color(uiColor: .secondarySystemGroupedBackground) : teal, in: RoundedRectangle(cornerRadius: 14))
     }
 }

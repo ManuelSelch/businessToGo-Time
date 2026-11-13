@@ -37,8 +37,9 @@ struct TimesheetView: View {
             Button("Save") {
                 if let activity = activity {
                     var timesheet = KimaiTimesheet.new
-                    timesheet.begin = "\(startTime)"
-                    timesheet.end = "\(endTime)"
+                    let formatter = ISO8601DateFormatter()
+                    timesheet.begin = formatter.string(from: startTime)
+                    timesheet.end = formatter.string(from: endTime)
                     timesheet.project = project
                     timesheet.activity = activity
                     
