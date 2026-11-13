@@ -58,12 +58,22 @@ struct ManagementContainer: View {
             }
         }
         .toolbar {
+            if route == .kimai(.customersList) {
+                ToolbarItem(placement: .topBarLeading) {
+                    Picker("Team", selection: store.binding(for: \.kimai.selectedTeam, action: { .teamSelected($0) })) {
+                        Text("Alle").tag(nil as Int?)
+                        ForEach(store.state.kimai.teams, id: \.id) { team in
+                            Text(team.name).tag(team.id as Int?)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .accessibilityLabel("Team auswählen")
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 ManagementHeaderView(
-                    selectedTeam: store.binding(for: \.kimai.selectedTeam, action: {.teamSelected($0)}),
                     route: route,
                     projects: store.state.kimai.projects,
-                    teams: store.state.kimai.teams,
                     syncStatus: store.state.kimai.syncStatus,
                     syncTapped: { store.send(.sync) },
                     projectTapped: {_ in},

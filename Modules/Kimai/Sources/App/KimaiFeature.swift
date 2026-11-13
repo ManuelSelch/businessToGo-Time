@@ -19,6 +19,7 @@ public struct KimaiFeature: Reducer {
         
         public var syncStatus: SyncStatus = .idle
         public var selectedTeam: Int?
+        public var customerSearch = ""
         
         public var customers: [KimaiCustomer] = []
         public var projects: [KimaiProject] = []
@@ -51,6 +52,7 @@ public struct KimaiFeature: Reducer {
     
     public enum CustomerAction: Codable, Equatable {
         case teamSelected(Int?)
+        case searchChanged(String)
         case save(KimaiCustomer)
         case delete(KimaiCustomer)
         case deleteConfirmed(KimaiCustomer)

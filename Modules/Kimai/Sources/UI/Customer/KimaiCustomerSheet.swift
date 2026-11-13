@@ -8,6 +8,7 @@ public struct KimaiCustomerSheet: View {
     let teams: [KimaiTeam]
     
     let saveTapped: (KimaiCustomer) -> ()
+    let cancelTapped: () -> Void
     
     var selectedTeams: [KimaiTeam] {
         return teams.filter { customer.teams.contains($0.id) }
@@ -16,10 +17,11 @@ public struct KimaiCustomerSheet: View {
     @State var name = ""
     @State var color: String?
     
-    public init(customer: KimaiCustomer, teams: [KimaiTeam], saveTapped: @escaping (KimaiCustomer) -> Void) {
+    public init(customer: KimaiCustomer, teams: [KimaiTeam], saveTapped: @escaping (KimaiCustomer) -> Void, cancelTapped: @escaping () -> Void) {
         self.customer = customer
         self.teams = teams
         self.saveTapped = saveTapped
+        self.cancelTapped = cancelTapped
     }
     
     public var body: some View {
@@ -40,27 +42,27 @@ public struct KimaiCustomerSheet: View {
                 }
                 
                 
-                HStack {
-                    Text("Teams: ")
-                    Spacer()
-                    
-                    ForEach(selectedTeams, id: \.id) { team in
-                        Button(action: {}) {
-                            Text(team.name)
-                                .foregroundColor(.gray)
+                if customer.id != KimaiCustomer.new.id {
+                    HStack {
+                        Text("Teams: ")
+                        Spacer()
+
+                        ForEach(selectedTeams, id: \.id) { team in
+                            Text(team.name).foregroundColor(.gray)
                         }
-                        .buttonStyle(.bordered)
-                        .disabled(true)
                     }
+                    .padding(.horizontal)
                 }
-                .padding(.horizontal)
                 
             }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Abbrechen", action: cancelTapped)
+                }
                 ToolbarItem(placement: .topBarTrailing){
                     Button(action: {
                         var customer = customer
-                        customer.name = name
+                        customer.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
                         customer.color = color ?? ""
                         saveTapped(customer)
                     }){
@@ -69,6 +71,7 @@ public struct KimaiCustomerSheet: View {
                         Text(label)
                             .foregroundStyle(Color.theme)
                     }
+                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
             

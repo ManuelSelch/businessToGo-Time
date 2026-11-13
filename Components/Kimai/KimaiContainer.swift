@@ -4,6 +4,7 @@ import Redux
 
 import CommonUI
 import KimaiUI
+import KimaiCore
 import OfflineSyncCore
 
 struct KimaiContainer: View {
@@ -16,25 +17,32 @@ struct KimaiContainer: View {
             switch(route) {
             case .customersList:
                 KimaiCustomersListView(
-                    customers: store.state.customers.filter {
-                        if let team = store.state.selectedTeam {
-                            return $0.teams.contains(team)
-                        } else {
-                            return true
-                        }
+                    customers: store.state.customers.filter { customer in
+                        let projects = store.state.projects.filter { $0.customer == customer.id }.map(\.name)
+                        return CustomerSearch.includes(name: customer.name, projectNames: projects, teams: customer.teams, selectedTeam: store.state.selectedTeam, query: store.state.customerSearch)
                     },
-                    changes: store.state.customerChanges,
+                    search: store.binding(for: \.customerSearch, action: { .searchChanged($0) }),
+                    hasFilters: store.state.selectedTeam != nil || !store.state.customerSearch.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                    resetFilters: { store.send(.teamSelected(nil)); store.send(.searchChanged("")) },
                     
                     customerTapped: { router.push(.management(.kimai(.projectsList(for: $0)))) },
                     customerEditTapped: { router.showSheet(.management(.kimai(.customerSheet($0)))) },
                     customerDeleteTapped: { store.send(.customer(.deleteTapped($0))) },
-                    customerCreated: { store.send(.customer(.created($0))) }
+                    customerCreated: { router.showSheet(.management(.kimai(.customerSheet(.new)))) }
                 )
             case let .customerSheet(customer):
                 KimaiCustomerSheet(
                     customer: customer,
                     teams: store.state.teams,
-                    saveTapped: { router.dismiss(); store.send(.customer(.saveTapped($0))) }
+                    saveTapped: { customer in
+                        router.dismiss()
+                        store.send(.customer(.saveTapped(customer)))
+                        if customer.id == KimaiCustomer.new.id {
+                            store.send(.teamSelected(nil))
+                            store.send(.searchChanged(""))
+                        }
+                    },
+                    cancelTapped: { router.dismiss() }
                 )
                 
             case let .projectsList(customer):
