@@ -7,9 +7,8 @@ public struct KimaiTimesheetSheet: View {
     let customers: [KimaiCustomer]
     let projects: [KimaiProject]
     let activities: [KimaiActivity]
-    
     let saveTapped: (KimaiTimesheet) -> ()
-    
+
     @State private var selectedCustomer: Int = 0
     @State private var selectedProject: Int = 0
     @State private var selectedActivity: Int = 0
@@ -17,11 +16,13 @@ public struct KimaiTimesheetSheet: View {
     @State private var startTime: Date = Date().roundTo15Minutes()
     @State private var endTime: Date = Date().roundTo15Minutes()
     @State private var isEndTime: Bool = false
-    
+
+    private let brandTeal = Color(red: 7 / 255, green: 62 / 255, blue: 67 / 255)
+
     var projectsFiltered: [KimaiProject] {
         projects.filter { $0.customer == selectedCustomer }
     }
-    
+
     var activitiesFiltered: [KimaiActivity] {
         var filteredActivities = activities
         if let project = projects.first(where: { $0.id == selectedProject }), !project.globalActivities {
@@ -29,7 +30,7 @@ public struct KimaiTimesheetSheet: View {
         }
         return filteredActivities.sorted { $0.name < $1.name }
     }
-    
+
     public init(timesheet: KimaiTimesheet, customers: [KimaiCustomer], projects: [KimaiProject], activities: [KimaiActivity], saveTapped: @escaping (KimaiTimesheet) -> Void) {
         self.timesheet = timesheet
         self.customers = customers
@@ -37,101 +38,85 @@ public struct KimaiTimesheetSheet: View {
         self.activities = activities
         self.saveTapped = saveTapped
     }
-    
+
     public var body: some View {
-        VStack {
-           
-            
-            Form {
-                Section(header: Text("Debug")) {
-                    Text("customer: \(selectedCustomer)")
-                    Text("project: \(selectedProject)")
-                    Text("activity: \(selectedActivity)")
+        Form {
+            Section("Work details") {
+                Picker("Customer", selection: $selectedCustomer) {
+                    ForEach(customers, id: \.id) { customer in
+                        Text(customer.name).tag(customer.id)
+                    }
                 }
-                .listRowBackground(Color.clear)
-                
-                Section(header: Text("Branch Info")) {
-                    Picker("Kunde", selection: $selectedCustomer) {
-                        ForEach(customers, id: \.id) {
-                            Text($0.name)
-                        }
+                .onChange(of: selectedCustomer) { _ in
+                    selectedProject = projectsFiltered.first(where: { $0.id == selectedProject })?.id ?? projectsFiltered.first?.id ?? 0
+                }
+
+                Picker("Project", selection: $selectedProject) {
+                    ForEach(projectsFiltered, id: \.id) { project in
+                        Text(project.name).tag(project.id)
                     }
-                    .pickerStyle(MenuPickerStyle())
-                    .onChange(of: selectedCustomer) { old in
-                        selectedProject = projectsFiltered.first(where: { $0.id == selectedProject })?.id ?? projectsFiltered.first?.id ?? 0
+                }
+                .onChange(of: selectedProject) { _ in
+                    selectedActivity = activitiesFiltered.first(where: { $0.id == selectedActivity })?.id ?? activitiesFiltered.first?.id ?? 0
+                }
+
+                Picker("Activity", selection: $selectedActivity) {
+                    ForEach(activitiesFiltered, id: \.id) { activity in
+                        Text(activity.name).tag(activity.id)
                     }
-                    
-                    Picker("Projekt", selection: $selectedProject) {
-                        ForEach(projectsFiltered, id: \.id) {
-                            Text($0.name)
-                        }
-                    }
-                    .pickerStyle(MenuPickerStyle())
-                    .onChange(of: selectedProject) { old in
-                        selectedActivity = activitiesFiltered.first(
-                            where: { $0.id == selectedActivity }
-                        )?.id ?? activitiesFiltered.first?.id ?? 0
-                    }
-                    
-                    Picker("Tätigkeit", selection: $selectedActivity) {
-                        ForEach(activitiesFiltered, id: \.id) {
-                            Text($0.name)
-                        }
-                    }
-                    .pickerStyle(MenuPickerStyle())
-                    
-                    
-                    TextField("Beschreibung", text: $description)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                    
-                    VStack {
-                        VStack {
-                            Text("Start time")
-                                .font(.system(size: 8))
-                            DatePicker("start time", selection: $startTime)
-                                .labelsHidden()
-                        }
-                        if isEndTime {
-                            VStack {
-                                Text("End time")
-                                    .font(.system(size: 8))
-                                DatePicker("end time", selection: $endTime)
-                                    .labelsHidden()
-                            }
-                        } else {
-                            VStack {
-                                Text("End time")
-                                    .font(.system(size: 8))
-                                Text("Stop")
-                                    .foregroundColor(.red)
-                                    .onTapGesture {
-                                        isEndTime = true
-                                    }
-                            }
+                }
+
+                TextField("Description", text: $description)
+            }
+
+            Section("Time") {
+                DatePicker("Start", selection: $startTime, displayedComponents: [.date, .hourAndMinute])
+
+                if isEndTime {
+                    DatePicker("End", selection: $endTime, displayedComponents: [.date, .hourAndMinute])
+                    Button("Remove end time") { isEndTime = false }
+                } else {
+                    Button {
+                        endTime = max(startTime, Date())
+                        isEndTime = true
+                    } label: {
+                        HStack {
+                            Text("End")
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Text("Running · tap to set")
+                                .foregroundStyle(brandTeal)
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
-                .listRowBackground(Color.clear)
             }
-             
-            .onAppear {
-                initializeState()
+        }
+        .tint(brandTeal)
+        .onAppear { initializeState() }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: save) {
+                    Image(systemName: "square.and.arrow.down")
+                }
+                .accessibilityLabel(timesheet.id == KimaiTimesheet.new.id ? "Create time entry" : "Save time entry")
             }
-   
-            .navigationBarItems(trailing: Button(timesheet.id == KimaiTimesheet.new.id ? "Create" : "Save") {
-                var updatedTimesheet = timesheet
-                updatedTimesheet.project = selectedProject
-                updatedTimesheet.activity = selectedActivity
-                let formatter = ISO8601DateFormatter()
-                updatedTimesheet.begin = formatter.string(from: startTime)
-                updatedTimesheet.end = isEndTime ? formatter.string(from: endTime) : nil
-                updatedTimesheet.description = description
-                
-                saveTapped(updatedTimesheet)
-            })
         }
     }
-    
+
+    private func save() {
+        var updatedTimesheet = timesheet
+        updatedTimesheet.project = selectedProject
+        updatedTimesheet.activity = selectedActivity
+        let formatter = ISO8601DateFormatter()
+        updatedTimesheet.begin = formatter.string(from: startTime)
+        updatedTimesheet.end = isEndTime ? formatter.string(from: endTime) : nil
+        updatedTimesheet.description = description
+        saveTapped(updatedTimesheet)
+    }
+
     private func initializeState() {
         if let project = projects.first(where: { $0.id == timesheet.project }),
            let customer = customers.first(where: { $0.id == project.customer }) {
@@ -141,19 +126,19 @@ public struct KimaiTimesheetSheet: View {
             selectedCustomer = customers.first?.id ?? 0
             selectedProject = projectsFiltered.first?.id ?? 0
         }
-        
+
         if let activity = activitiesFiltered.first(where: { $0.id == timesheet.activity }) {
             selectedActivity = activity.id
         } else {
             selectedActivity = activitiesFiltered.first?.id ?? 0
         }
-        
+
         description = timesheet.description ?? ""
         startTime = getDate(from: timesheet.begin) ?? Date()
         endTime = getDate(from: timesheet.end) ?? Date()
         isEndTime = timesheet.end != nil
     }
-    
+
     private func getDate(from dateStr: String?) -> Date? {
         guard let dateStr = dateStr else { return nil }
         let strategy = Date.ParseStrategy(
