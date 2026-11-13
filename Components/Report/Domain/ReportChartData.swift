@@ -10,6 +10,8 @@ struct ReportChartBucket: Identifiable {
     let label: String
     let accessibilityLabel: String
     let hours: Double
+
+    var chartKey: String { String(id) }
 }
 
 enum ReportChartPeriod {

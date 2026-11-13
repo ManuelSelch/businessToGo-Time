@@ -24,6 +24,8 @@ struct ReportChartDataTests {
         let year = ReportChartData.buckets(period: .year, selectedDate: date(2025, 11, 13), entries: records, calendar: calendar)
         precondition(year.count == 12 && year[9].hours == 7 && year[10].hours == 15 && year[11].hours == 16)
         precondition(year[0].accessibilityLabel == "Januar" && year[5].accessibilityLabel == "Juni")
+        precondition(Set(year.map(\.chartKey)).count == 12)
+        precondition(year[0].chartKey != year[5].chartKey && year[0].label == year[5].label)
 
         let week = ReportChartData.buckets(period: .week, selectedDate: date(2025, 11, 2), entries: records, calendar: calendar)
         precondition(week.map(\.label) == ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"])

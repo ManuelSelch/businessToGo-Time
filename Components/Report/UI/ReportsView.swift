@@ -209,7 +209,7 @@ private struct ReportBarChart: View {
     var body: some View {
         Chart(buckets) { bucket in
             BarMark(
-                x: .value("Zeitraum", bucket.id),
+                x: .value("Zeitraum", bucket.chartKey),
                 y: .value("Stunden", bucket.hours)
             )
             .cornerRadius(4)
@@ -217,10 +217,11 @@ private struct ReportBarChart: View {
             .accessibilityLabel(bucket.accessibilityLabel)
             .accessibilityValue("\(bucket.hours.formatted()) Stunden")
         }
+        .chartXScale(domain: buckets.map(\.chartKey))
         .chartXAxis {
-            AxisMarks(values: buckets.map(\.id)) { value in
-                AxisValueLabel {
-                    if let index = value.as(Int.self), buckets.indices.contains(index) {
+            AxisMarks(preset: .aligned, values: buckets.map(\.chartKey)) { value in
+                AxisValueLabel(centered: false) {
+                    if let key = value.as(String.self), let index = Int(key), buckets.indices.contains(index) {
                         Text(buckets[index].label)
                     }
                 }
