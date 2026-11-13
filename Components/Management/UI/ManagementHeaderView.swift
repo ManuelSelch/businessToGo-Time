@@ -70,12 +70,16 @@ struct ManagementHeaderView: View {
                     Button(action: syncTapped){
                         Image(systemName: "arrow.triangle.2.circlepath")
                     }
+                    .buttonStyle(IconButtonStyle())
+                    .accessibilityLabel("Synchronisieren")
                 case .syncing:
                     ProgressView()
                 case .failed:
                     Button(action: syncTapped){
                         Image(systemName: "exclamationmark.icloud.fill")
                     }
+                    .buttonStyle(IconButtonStyle())
+                    .accessibilityLabel("Synchronisierung fehlgeschlagen, erneut versuchen")
                     .foregroundStyle(Color.red)
                 }
               
@@ -100,10 +104,14 @@ struct ManagementHeaderView: View {
                 }){
                     Image(systemName: "play.fill")
                 }
+                .buttonStyle(IconButtonStyle())
+                .accessibilityLabel("Zeiteintrag erstellen")
                 
                 Button(action: settingsTapped) {
                     Image(systemName: "gear")
                 }
+                .buttonStyle(IconButtonStyle())
+                .accessibilityLabel("Einstellungen")
             }
       
             

@@ -31,6 +31,7 @@ struct AppContainer: View {
                 tab.label()
             }
         )
+        .tint(.theme)
         .onAppear {
             store.send(.intro(.load))
         }

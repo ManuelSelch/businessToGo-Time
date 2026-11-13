@@ -1,4 +1,5 @@
 import SwiftUI
+import CommonUI
 
 struct AppHeader: View {
     
@@ -14,7 +15,7 @@ struct AppHeader: View {
                
                 Spacer()
             }
-            .foregroundStyle(Color.white)
+            .foregroundStyle(Color.themeForeground)
                 
             HStack {
                 Spacer()
@@ -22,7 +23,7 @@ struct AppHeader: View {
                 Button(action: settingsTapped){
                     Image(systemName: "gearshape")
                         .font(.system(size: 20))
-                        .foregroundColor(Color.white)
+                        .foregroundColor(Color.themeForeground)
                 }
             }
                 

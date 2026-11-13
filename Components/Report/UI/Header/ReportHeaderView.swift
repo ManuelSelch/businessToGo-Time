@@ -3,6 +3,7 @@ import Redux
 
 import KimaiCore
 import CommonCore
+import CommonUI
 
 struct ReportHeaderView: View {
     @Binding var selectedReportType: ReportType
@@ -22,6 +23,8 @@ struct ReportHeaderView: View {
                 Button(action: filterTapped) {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                 }
+                .buttonStyle(IconButtonStyle())
+                .accessibilityLabel("Berichte filtern")
                 
                 let reportTypes = ReportType.allCases.filter({$0 != .day})
                 Picker("Report Date", selection: $selectedReportType){
@@ -37,9 +40,10 @@ struct ReportHeaderView: View {
                 
                 Button(action: playTapped){
                     Image(systemName: "play.fill")
-                        .font(.system(size: 20))
                         .foregroundColor(Color.theme)
                 }
+                .buttonStyle(IconButtonStyle())
+                .accessibilityLabel("Zeiteintrag erstellen")
             }
             .font(.system(size: 20))
             .foregroundStyle(Color.theme)
@@ -147,7 +151,7 @@ private struct ReportWeekCalendar: View {
                             Text(date.formatted(.dateTime.day()))
                                 .frame(maxWidth: .infinity, minHeight: 38)
                                 .background(date.isInMondayWeek(of: selectedDate) ? Color.theme : Color.clear, in: RoundedRectangle(cornerRadius: 8))
-                                .foregroundStyle(date.isInMondayWeek(of: selectedDate) ? Color.white : (calendar.isDate(date, equalTo: monthStart, toGranularity: .month) ? Color.contrast : Color.gray))
+                                .foregroundStyle(date.isInMondayWeek(of: selectedDate) ? Color.themeForeground : (calendar.isDate(date, equalTo: monthStart, toGranularity: .month) ? Color.contrast : Color.gray))
                         }
                         .accessibilityLabel(date.formatted(date: .complete, time: .omitted))
                     }

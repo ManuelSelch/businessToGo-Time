@@ -43,7 +43,7 @@ struct ReportCalendarView: View {
                     .bold()
                     .foregroundStyle(
                         months.firstIndex(of: item)! + 1 == selectedDate.month() ?
-                        Color.background : Color.contrast
+                        Color.themeForeground : Color.contrast
                     )
                     .background(
                         months.firstIndex(of: item)! + 1 == selectedDate.month() ?
