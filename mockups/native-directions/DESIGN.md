@@ -1,0 +1,56 @@
+# Native UI directions
+
+- Revision: 1. Status: in review; not approved for implementation.
+- Goal: compare three native-feeling iOS treatments using the same synthetic time-tracking content.
+- Scope: isolated browser prototypes only. SwiftUI, app dependencies and existing approved weekly-report mockup are unchanged.
+- Platform assumption: iPhone first; fixed-width, scrollable phone canvases on desktop and horizontally comparable on narrow screens. Browser components approximate iOS, not UIKit/SwiftUI gestures, materials or Dynamic Type.
+- Language: German in all three phone concepts to compare without mixed-language noise; final localization remains a production decision.
+
+## Source-based observations
+
+Read current dashboard, Today routes, app router, report/header, management toolbar, settings and color assets. No native runtime inspection or screenshots performed.
+
+- DashboardView combines a background image, elevated summary card and square customer cards with substantial shadows. Recommend semantic grouped backgrounds, lists, subtle separators and fewer nested surfaces.
+- The dashboard greeting is hardcoded. Replace placeholder personalization with date/context or a real localized greeting.
+- Existing theme is blue; A retains this identity. B explores a restrained green accent; C uses blue with denser composition.
+- Existing tabs are Today / Projects / Reports. Preserve these three areas; consistent localized labels, icon stroke weights and selected states help recognition.
+- Icon-only play/sync/settings controls benefit from consistent 44-point targets, accessible names and clear start/stop labels where the action is consequential.
+- Projects remains customer-first. Do not replace customer → project → activity management with recent-project shortcuts.
+- Settings must retain accounts/integrations, intro, diagnosis and logout paths. Destructive actions should be separated and confirmed.
+- Native production implementation should use NavigationStack, system toolbar/tab bars, SF Symbols, system grouped Lists/Forms, semantic colors, Dynamic Type and VoiceOver, not reproduce these web controls verbatim.
+
+## Compared directions
+
+- A / Native Standard: large title, system-blue accents, grouped rows, explicit daily total, neutral active timer. Recommended foundation.
+- B / Quiet Focus: active timer receives one dark green surface; other content stays quiet. More distinctive, less strictly system-default.
+- C / Compact Workday: smaller headings, shorter rows, subtle selected-tab treatment. Faster scanning at the cost of spaciousness; retain accessible touch targets.
+
+## Review states and interactions
+
+- Route: /native-directions/
+- Query parameters: screen=Heute|Projekte|Berichte, state=running|idle|empty|offline, theme=light|dark. Controls update the URL. Reload restores these review choices.
+- Global controls reset all phones to the same comparison state. Individual phone tabs navigate independently.
+- Interactive: three tabs, start/stop simulation, recent project selection, time-entry form sheet, project search, report period/filter controls and bounded previous/next period samples.
+- Reports uses deterministic sample bars; selected period is illustrative rather than date-correct reporting. Filters change illustrative totals only. Empty/off-week examples omit entries.
+- Offline and sync states are authored examples, not evidence of actual sync correctness.
+- Timer digits are static. No live timing, backend, persistence, real accounts, real authentication or production dependency changes.
+- Settings sheet is an abbreviated preview; it is not an approved removal of existing settings.
+- Agentation is development-only, using local copy/paste annotations; no endpoint or MCP integration.
+
+## Proposed behavior changes — require separate approval
+
+- A visible active timer on Today replaces dashboard-only emphasis.
+- Recent-project quick starts supplement (not remove) customer-first navigation.
+- Completed entries on Today link to editing.
+- Explicit sync/offline text supplements existing sync icons.
+- No approval implied for new pause/resume, automatic retry, background timing, daily targets, billing or automatic synchronization.
+- Full CRUD, account switching, customer/project/activity management, team filtering, report calendar/week selection, editing/deletion, settings and logout must remain available if implemented. The abbreviated demo does not authorize their removal.
+
+## Verification and approval
+
+- Dependency installation completed using existing lockfile.
+- TypeScript no-emit check passed.
+- HTTP HTML/module/style serving checked; startup log inspected. No browser execution or visual verification performed.
+- App pipeline intentionally not required for isolated mockups; no production verification claimed.
+- npm install reports one high-severity development dependency advisory; no automatic upgrades. Production-only audit reports zero.
+- Approval evidence: none. Await user comparison, feedback and explicit revision approval.
