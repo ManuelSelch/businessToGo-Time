@@ -72,7 +72,7 @@ public struct KimaiCustomersListView: View {
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, ControlSpacing.standard)
-                .padding(.top, ControlSpacing.compact)
+                .padding(.top, 4)
 
             List {
                 if customers.isEmpty {
@@ -90,6 +90,7 @@ public struct KimaiCustomersListView: View {
                                 .foregroundStyle(Color.primary)
                                 .accessibilityLabel("Projekt für \(customer.name) erstellen")
                         }
+                        .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
                         .swipeActions(edge: .trailing) {
                             Button("Delete", role: .destructive) { customerDeleteTapped(customer) }
                             Button("Edit") { customerEditTapped(customer) }.tint(.gray)
@@ -99,9 +100,10 @@ public struct KimaiCustomersListView: View {
                         }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { project in
                             Button { projectTapped(project) } label: {
                                 FolderRow(title: project.name, color: folderColor(project.color), minHeight: 44)
-                                    .padding(.leading, 24)
+                                    .padding(.leading, 16)
                             }
                             .buttonStyle(.plain)
+                            .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
                             .swipeActions(edge: .trailing) {
                                 Button("Delete", role: .destructive) { projectDeleteTapped(project) }
                                 Button("Edit") { projectEditTapped(project) }.tint(.gray)
@@ -112,7 +114,8 @@ public struct KimaiCustomersListView: View {
             }
             .scrollContentBackground(.hidden)
             .modifier(CompactSectionSpacing())
-            .environment(\.defaultMinListHeaderHeight, 8)
+            .environment(\.defaultMinListHeaderHeight, 0)
+            .environment(\.defaultMinListRowHeight, 44)
         }
     }
 }
@@ -120,7 +123,7 @@ public struct KimaiCustomersListView: View {
 private struct CompactSectionSpacing: ViewModifier {
     @ViewBuilder func body(content: Content) -> some View {
         if #available(iOS 17, macOS 14, *) {
-            content.listSectionSpacing(8)
+            content.listSectionSpacing(2)
         } else {
             content
         }
