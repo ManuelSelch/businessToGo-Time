@@ -10,7 +10,7 @@ type Screen = 'Heute' | 'Projekte' | 'Berichte';
 type Direction = 'standard' | 'focus' | 'compact';
 type ReviewState = 'running' | 'idle' | 'empty' | 'offline';
 const directions: {id: Direction; letter: string; name: string; description: string; tradeoff: string}[] = [
-  {id:'standard',letter:'A',name:'Native Standard',description:'Vertraute iOS-Hierarchie. Gruppierte Listen, Systemblau, ruhige Flächen.',tradeoff:'Empfehlung · größte Vertrautheit, geringstes visuelles Risiko.'},
+  {id:'standard',letter:'A',name:'Native Standard',description:'Vertraute iOS-Hierarchie. Gruppierte Listen, Familienfarben, ruhige Flächen.',tradeoff:'Empfehlung · größte Vertrautheit, geringstes visuelles Risiko.'},
   {id:'focus',letter:'B',name:'Quiet Focus',description:'Die laufende Arbeit im Mittelpunkt. Eine Akzentfläche, weniger Ablenkung.',tradeoff:'Stärkerer Charakter · der Timer erhält deutlich mehr Gewicht.'},
   {id:'compact',letter:'C',name:'Compact Workday',description:'Mehr Überblick auf einen Blick. Kompakte Zeilen statt großer Kacheln.',tradeoff:'Für häufige Nutzung · höhere Informationsdichte.'}
 ];
@@ -19,10 +19,10 @@ const projects = [
   {name:'Website Relaunch',customer:'Atelier West',activity:'Konzeption',color:'orange',time:'1 Std. 30 Min.'},
   {name:'Organisation',customer:'Intern',activity:'Administration',color:'purple',time:'45 Min.'}
 ];
-const theme = createTheme({ primaryColor:'blue',fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',defaultRadius:'md',components:{Button:{defaultProps:{size:'md'}},ActionIcon:{defaultProps:{size:44,variant:'subtle'}}} });
+const theme = createTheme({ primaryColor:'brand',colors:{brand:['#edf9f3','#d5f2e4','#b4eacf','#84E2B1','#5bc69b','#30967b','#073E43','#06373c','#052f34','#04282c']},primaryShade:{light:6,dark:3},fontFamily:'-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',defaultRadius:'md',components:{Button:{defaultProps:{size:'md'}},ActionIcon:{defaultProps:{size:44,variant:'subtle'}}} });
 
 function ProjectRows({onSelect, management = false}: {onSelect:(name:string)=>void;management?:boolean}) {
- return <div className="group">{projects.map(p=><button className="project-row" key={p.name} onClick={()=>onSelect(p.name)}><span className={'project-mark '+p.color}><IconFolder size={20}/></span><span className="row-copy"><strong>{management ? p.customer : p.name}</strong><small>{management ? p.name+' · 2 Aktivitäten' : p.customer+' · '+p.activity}</small></span>{management ? <IconChevronRight size={16} className="muted"/> : <IconPlayerPlayFilled size={16} className="accent"/>}</button>)}</div>;
+ return <div className="group">{projects.map(p=><button className="project-row" key={p.name} onClick={()=>onSelect(p.name)}><span className={'project-mark '+p.color}><IconFolder size={20}/></span><span className="row-copy"><strong>{management ? p.customer : p.name}</strong><small>{management ? p.name : p.customer+' · '+p.activity}</small></span>{management ? <IconChevronRight size={16} className="muted"/> : <IconPlayerPlayFilled size={16} className="accent"/>}</button>)}</div>;
 }
 function TimeEntries({onSelect}: {onSelect:(name:string)=>void}) {
  return <div className="group">{projects.slice(1).map((p,i)=><button className="time-row" key={p.name} onClick={()=>onSelect(p.name)}><span className={'line-mark '+p.color}/><span className="row-copy"><strong>{p.name}</strong><small>{p.customer} · {i===0?'09:00–10:30':'08:15–09:00'}</small></span><strong className="duration">{i===0?'1:30':'0:45'}</strong><IconChevronRight size={14} className="muted"/></button>)}</div>;
@@ -32,7 +32,7 @@ function TimerPanel({running,project,onToggle,onSelect}: {running:boolean;projec
    <div className="timer-meta"><span className="live-label">{running && <span className="live-dot"/>}{running?'ZEIT LÄUFT':'BEREIT, WENN DU ES BIST'}</span><span>Nord Studio</span></div>
    <button className="timer-project" onClick={onSelect}>{project}<IconChevronRight size={17}/></button>
    <p className="timer-activity">Entwicklung</p>
-   <div className="timer-bottom"><span className="timer-number">{running?'02:24:18':'00:00:00'}</span><Button color={running?'red':'blue'} variant={running?'light':'filled'} onClick={onToggle} leftSection={running?<IconSquareFilled size={12}/>:<IconPlayerPlayFilled size={13}/>}>{running?'Stoppen':'Starten'}</Button></div>
+   <div className="timer-bottom"><span className="timer-number">{running?'02:24:18':'00:00:00'}</span><Button color={running?'red':'brand'} variant={running?'light':'filled'} onClick={onToggle} leftSection={running?<IconSquareFilled size={12}/>:<IconPlayerPlayFilled size={13}/>}>{running?'Stoppen':'Starten'}</Button></div>
  </section>;
 }
 function ReportView({empty,onEntry}: {empty:boolean;onEntry:(name:string)=>void}) {
@@ -55,9 +55,8 @@ function Phone({direction,initialScreen,state,dark}:{direction:Direction;initial
  const flash=(message:string)=>setNotice(message);
  return <MantineProvider theme={theme} forceColorScheme={dark?'dark':'light'}><div className={'phone '+direction+(dark?' dark':'')}>
  <div className="status-bar"><strong>9:41</strong><span><IconWifi size={16}/><IconBatteryFilled size={22}/></span></div>
- <div className="phone-top"><span>businessToGo</span><div><ActionIcon aria-label="Synchronisieren" onClick={()=>flash(state==='offline'?'Offline · Änderungen bleiben lokal (Simulation).':'Synchronisiert · nur Demo')}><IconRefresh size={19}/></ActionIcon><ActionIcon aria-label="Einstellungen" onClick={()=>setSheet('settings')}><IconSettings size={21}/></ActionIcon></div></div>
- <header className="screen-heading"><div><p>{screen==='Heute'?'DONNERSTAG, 13. NOVEMBER':screen==='Projekte'?'KUNDEN & ARBEIT':'DEINE ZEIT IM ÜBERBLICK'}</p><h2>{screen}</h2></div>{screen!=='Berichte'&&<ActionIcon variant="light" radius="xl" aria-label="Zeiteintrag hinzufügen" onClick={()=>setSheet('entry')}><IconPlus size={23}/></ActionIcon>}</header>
- <main className="phone-content">
+ <div className="phone-top"><Button className="add-time" variant="subtle" leftSection={<IconPlus size={18}/>} onClick={()=>setSheet('entry')}>Zeit hinzufügen</Button><div><ActionIcon aria-label="Synchronisieren" onClick={()=>flash(state==='offline'?'Offline · Änderungen bleiben lokal (Simulation).':'Synchronisiert · nur Demo')}><IconRefresh size={19}/></ActionIcon><ActionIcon aria-label="Einstellungen" onClick={()=>setSheet('settings')}><IconSettings size={21}/></ActionIcon></div></div>
+ <main className="phone-content" aria-label={screen}>
  {state==='offline'&&<div className="offline-banner"><IconCloudOff size={17}/><span>Offline · 2 Änderungen ausstehend</span></div>}
  {notice&&<div className="notice" role="status">{notice}<ActionIcon aria-label="Hinweis schließen" onClick={()=>setNotice('')} size={28}><IconX size={14}/></ActionIcon></div>}
  {screen==='Heute'&&<>
@@ -83,8 +82,8 @@ function App() {
  const [dark,setDark]=useState(params.get('theme')==='dark');
  const update=(key:string,value:string)=>{const url=new URL(location.href);url.searchParams.set(key,value);history.replaceState(null,'',url);};
  return <div className="studio">
- <header className="studio-header"><a className="wordmark" href="./">business<span>ToGo</span><Badge variant="outline" color="gray" size="sm">DESIGN LAB · 01</Badge></a><span className="prototype-label">iOS-Konzepte · keine Produktionsänderungen</span></header>
- <section className="intro"><div><p className="eyebrow">WENIGER OBERFLÄCHE. MEHR ARBEITSFLUSS.</p><h1>Ein vertrauteres Gefühl.<br/><span>Drei Wege dorthin.</span></h1><p className="intro-copy">Gleiche Inhalte, gleiche drei Bereiche. Vergleiche Hierarchie, Bedienelemente und Informationsdichte — nicht nur neue Farben.</p></div><aside><span className="recommendation-label">MEINE EMPFEHLUNG</span><h3>Mit A beginnen. Von B lernen.</h3><p>Native Listen und Systemfarben als Basis. Eine klar sichtbare laufende Zeiterfassung als gezielte Verbesserung.</p></aside></section>
+ <header className="studio-header"><a className="wordmark" href="./">business<span>ToGo</span><Badge variant="outline" color="gray" size="sm">DESIGN LAB · 02</Badge></a><span className="prototype-label">iOS-Konzepte · keine Produktionsänderungen</span></header>
+ <section className="intro"><div><p className="eyebrow">WENIGER OBERFLÄCHE. MEHR ARBEITSFLUSS.</p><h1>Ein vertrauteres Gefühl.<br/><span>Drei Wege dorthin.</span></h1><p className="intro-copy">Gleiche Inhalte, gleiche drei Bereiche. Vergleiche Hierarchie, Bedienelemente und Informationsdichte — nicht nur neue Farben.</p></div><aside><span className="recommendation-label">MEINE EMPFEHLUNG</span><h3>Mit A beginnen. Von B lernen.</h3><p>Native Listen und die Teal-/Mint-Familienfarben als Basis. Eine klar sichtbare laufende Zeiterfassung als gezielte Verbesserung.</p></aside></section>
  <div className="review-controls"><div><span className="control-label">Ansicht</span><SegmentedControl value={screen} onChange={v=>{setScreen(v as Screen);update('screen',v);}} data={['Heute','Projekte','Berichte']}/></div><div><span className="control-label">Zustand</span><Select aria-label="Demozustand" value={state} onChange={v=>{setState(v as ReviewState);update('state',v!);}} data={[{value:'running',label:'Zeit läuft'},{value:'idle',label:'Bereit'},{value:'empty',label:'Leer'},{value:'offline',label:'Offline'}]}/></div><Switch label="Dunkel" checked={dark} onChange={e=>{setDark(e.currentTarget.checked);update('theme',e.currentTarget.checked?'dark':'light');}}/><span className="control-hint">Alle drei Entwürfe sind interaktiv.</span></div>
  <section className="comparison">{directions.map(d=><article className="direction" key={d.id}><header className="direction-heading"><span className="direction-letter">{d.letter}</span><div><h2>{d.name}</h2><p>{d.description}</p></div></header><Phone key={d.id+screen+state+dark} direction={d.id} initialScreen={screen} state={state} dark={dark}/><p className="tradeoff">{d.tradeoff}</p></article>)}</section>
  <section className="principles"><div><span>01 / STIL</span><h3>System statt Dekoration</h3><p>Systemschrift, semantische Flächen, echte Listen und dezente Trennlinien statt Hintergrundbildern und Kartenschatten.</p></div><div><span>02 / BEDIENUNG</span><h3>Absichten sichtbar machen</h3><p>Starten und Stoppen beschriften. Mindestens 44 pt große Ziele. Einheitliche SF Symbols in der echten iOS-App.</p></div><div><span>03 / VERTRAUEN</span><h3>Status statt Rätsel</h3><p>Offline, ausstehende Änderungen und Fehler in Klartext. Farbe unterstützt die Aussage, trägt sie aber nicht allein.</p></div></section>

@@ -1,6 +1,7 @@
 # Native UI directions
 
-- Revision: 1. Status: in review; not approved for implementation.
+- Revision: 2. Status: in review; not approved for implementation.
+- Revision 2 applies submitted page feedback: retain timer panels, use family colors, remove in-phone branding/large headings and activity counts, reduce report chart height, clarify the add-time action.
 - Goal: compare three native-feeling iOS treatments using the same synthetic time-tracking content.
 - Scope: isolated browser prototypes only. SwiftUI, app dependencies and existing approved weekly-report mockup are unchanged.
 - Platform assumption: iPhone first; fixed-width, scrollable phone canvases on desktop and horizontally comparable on narrow screens. Browser components approximate iOS, not UIKit/SwiftUI gestures, materials or Dynamic Type.
@@ -12,7 +13,8 @@ Read current dashboard, Today routes, app router, report/header, management tool
 
 - DashboardView combines a background image, elevated summary card and square customer cards with substantial shadows. Recommend semantic grouped backgrounds, lists, subtle separators and fewer nested surfaces.
 - The dashboard greeting is hardcoded. Replace placeholder personalization with date/context or a real localized greeting.
-- Existing theme is blue; A retains this identity. B explores a restrained green accent; C uses blue with denser composition.
+- Existing app theme is blue. Per user feedback, all concepts now use the family branding PDF: teal #073E43 and mint #84E2B1 (page 1). Source: businessToGo ERP/docs/branding/businessToGo-family.pdf, read from the supplied local path. Brand colors are exact; supporting neutral/tinted colors are prototype choices, not prescribed brand tokens.
+- Teal is the light-mode action color; mint is the dark-mode action color and timer highlight. Mint buttons use teal text, not white.
 - Existing tabs are Today / Projects / Reports. Preserve these three areas; consistent localized labels, icon stroke weights and selected states help recognition.
 - Icon-only play/sync/settings controls benefit from consistent 44-point targets, accessible names and clear start/stop labels where the action is consequential.
 - Projects remains customer-first. Do not replace customer → project → activity management with recent-project shortcuts.
@@ -21,9 +23,12 @@ Read current dashboard, Today routes, app router, report/header, management tool
 
 ## Compared directions
 
-- A / Native Standard: large title, system-blue accents, grouped rows, explicit daily total, neutral active timer. Recommended foundation.
-- B / Quiet Focus: active timer receives one dark green surface; other content stays quiet. More distinctive, less strictly system-default.
-- C / Compact Workday: smaller headings, shorter rows, subtle selected-tab treatment. Faster scanning at the cost of spaciousness; retain accessible touch targets.
+- Shared: no in-phone businessToGo label, no large screen/date headers. A compact 44px-target toolbar retains labeled “Zeit hinzufügen”, sync and settings. Selected bottom tabs identify the screen; the main landmark retains an accessible label.
+- Shared active timer: teal surface with mint duration, status dot and stop control. Retains explicit “Stoppen” text and square icon; idle timer stays neutral.
+- A / Native Standard: grouped rows, explicit daily total above the timer. Recommended foundation.
+- B / Quiet Focus: more spacious timer and larger duration, daily total below. More emphasis on active work.
+- C / Compact Workday: shorter rows, compact timer, subtle selected-tab treatment. Faster scanning at the cost of spaciousness; retain accessible touch targets.
+- Management rows no longer show activity counts. Reports uses 80px bars (previously 135px), smaller total text and reduced card padding to expose more entries.
 
 ## Review states and interactions
 
@@ -31,6 +36,7 @@ Read current dashboard, Today routes, app router, report/header, management tool
 - Query parameters: screen=Heute|Projekte|Berichte, state=running|idle|empty|offline, theme=light|dark. Controls update the URL. Reload restores these review choices.
 - Global controls reset all phones to the same comparison state. Individual phone tabs navigate independently.
 - Interactive: three tabs, start/stop simulation, recent project selection, time-entry form sheet, project search, report period/filter controls and bounded previous/next period samples.
+- “Zeit hinzufügen” replaces the ambiguous plus-only header action. It opens the manual time-entry sheet (project, activity, description, start and optional end); available on all three tabs. It does not create a project. Save behavior remains the existing prototype simulation, not a finalized production lifecycle.
 - Reports uses deterministic sample bars; selected period is illustrative rather than date-correct reporting. Filters change illustrative totals only. Empty/off-week examples omit entries.
 - Offline and sync states are authored examples, not evidence of actual sync correctness.
 - Timer digits are static. No live timing, backend, persistence, real accounts, real authentication or production dependency changes.
@@ -53,4 +59,4 @@ Read current dashboard, Today routes, app router, report/header, management tool
 - HTTP HTML/module/style serving checked; startup log inspected. No browser execution or visual verification performed.
 - App pipeline intentionally not required for isolated mockups; no production verification claimed.
 - npm install reports one high-severity development dependency advisory; no automatic upgrades. Production-only audit reports zero.
-- Approval evidence: none. Await user comparison, feedback and explicit revision approval.
+- Approval evidence: user likes the timer and prefers green, but has not approved a complete revision or authorized production implementation. Await review of revision 2.
