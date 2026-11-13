@@ -72,7 +72,7 @@ public struct KimaiCustomersListView: View {
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, ControlSpacing.standard)
-                .padding(.top, ControlSpacing.standard)
+                .padding(.top, ControlSpacing.compact)
 
             List {
                 if customers.isEmpty {
@@ -84,8 +84,8 @@ public struct KimaiCustomersListView: View {
                 ForEach(customers.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { customer in
                     Section {
                         HStack(spacing: 0) {
-                            FolderRow(title: customer.name, color: folderColor(customer.color), showsChevron: false)
-                            Button { projectCreated(customer) } label: { Image(systemName: "plus") }
+                            FolderRow(title: customer.name, color: folderColor(customer.color), showsChevron: false, minHeight: 44)
+                            Button { projectCreated(customer) } label: { Image(systemName: "plus").frame(width: 44, height: 44) }
                                 .buttonStyle(.plain)
                                 .foregroundStyle(Color.primary)
                                 .accessibilityLabel("Projekt für \(customer.name) erstellen")
@@ -98,8 +98,8 @@ public struct KimaiCustomersListView: View {
                             $0.customer == customer.id && CustomerSearch.projectMatches(customerName: customer.name, projectName: $0.name, query: search)
                         }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }) { project in
                             Button { projectTapped(project) } label: {
-                                FolderRow(title: project.name, color: folderColor(project.color))
-                                    .padding(.leading, 30)
+                                FolderRow(title: project.name, color: folderColor(project.color), minHeight: 44)
+                                    .padding(.leading, 24)
                             }
                             .buttonStyle(.plain)
                             .swipeActions(edge: .trailing) {
@@ -111,6 +111,18 @@ public struct KimaiCustomersListView: View {
                 }
             }
             .scrollContentBackground(.hidden)
+            .modifier(CompactSectionSpacing())
+            .environment(\.defaultMinListHeaderHeight, 8)
+        }
+    }
+}
+
+private struct CompactSectionSpacing: ViewModifier {
+    @ViewBuilder func body(content: Content) -> some View {
+        if #available(iOS 17, macOS 14, *) {
+            content.listSectionSpacing(8)
+        } else {
+            content
         }
     }
 }

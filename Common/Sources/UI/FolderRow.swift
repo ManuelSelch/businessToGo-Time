@@ -5,12 +5,14 @@ public struct FolderRow: View {
     let subtitle: String?
     let color: Color
     let showsChevron: Bool
+    let minHeight: CGFloat
 
-    public init(title: String, subtitle: String? = nil, color: Color, showsChevron: Bool = true) {
+    public init(title: String, subtitle: String? = nil, color: Color, showsChevron: Bool = true, minHeight: CGFloat = 58) {
         self.title = title
         self.subtitle = subtitle
         self.color = color
         self.showsChevron = showsChevron
+        self.minHeight = minHeight
     }
 
     public var body: some View {
@@ -23,7 +25,7 @@ public struct FolderRow: View {
             Spacer()
             if showsChevron { Image(systemName: "chevron.right").foregroundStyle(.secondary) }
         }
-        .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+        .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .leading)
         .contentShape(Rectangle())
     }
 }
