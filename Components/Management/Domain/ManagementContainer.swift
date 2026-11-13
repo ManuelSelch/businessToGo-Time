@@ -12,15 +12,6 @@ struct ManagementContainer: View {
     var store: ViewStoreOf<ManagementComponent>
     var route: ManagementComponent.Route
     
-    var isSheet: Bool {
-        switch(route) {
-        case .kimai(.customerSheet), .kimai(.projectSheet), .kimai(.timesheetSheet):
-            return true
-        default:
-            return false
-        }
-    }
-    
     init(mainStore: StoreOf<AppFeature>, route: ManagementComponent.Route) {
         self.mainStore = mainStore
         self.store = mainStore.projection(ManagementComponent.self)
@@ -38,23 +29,6 @@ struct ManagementContainer: View {
                 )
             case .assistant:
                 AssistantContainer(store: mainStore.projection(AssistantComponent.self))
-            }
-            
-            
-            if  !isSheet, route != .assistant,
-                let timesheet = store.state.kimai.timesheets.first(where: { $0.end == nil }),
-                let activity = store.state.kimai.activities.first(where: { $0.id == timesheet.activity }),
-                let project = store.state.kimai.projects.first(where: { $0.id == timesheet.project }),
-                let customer = store.state.kimai.customers.first(where: { $0.id == project.customer })
-            {
-                KimaiTimesheetPopup(
-                    customer: customer,
-                    project: project,
-                    activity: activity,
-                    timesheet: timesheet,
-                    timesheetTapped: { router.showSheet(.management(.kimai(.timesheetSheet(timesheet)))) },
-                    stopTapped: { store.send(.stopTapped(timesheet)) }
-                )
             }
         }
         .toolbar {
