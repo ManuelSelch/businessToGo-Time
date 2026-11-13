@@ -98,9 +98,7 @@ public struct KimaiTimesheetSheet: View {
         .onAppear { initializeState() }
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button(action: save) {
-                    Image(systemName: "square.and.arrow.down")
-                }
+                Button("Done", action: save)
                 .accessibilityLabel(timesheet.id == KimaiTimesheet.new.id ? "Create time entry" : "Save time entry")
             }
         }
