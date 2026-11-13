@@ -79,13 +79,11 @@ struct DashboardView: View {
         let activity = activities.first { $0.id == active?.activity }
 
         return VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(active == nil ? "BEREIT, WENN DU ES BIST" : "ZEIT LÄUFT")
-                    .font(.caption2.weight(.bold))
-                Spacer()
-                if let customer { Text(customer.name).font(.caption) }
+            if let customer {
+                Text(customer.name)
+                    .font(.caption)
+                    .foregroundStyle(active == nil ? Color.secondary : Color.white.opacity(0.8))
             }
-            .foregroundStyle(active == nil ? Color.secondary : Color.white.opacity(0.8))
 
             Text(project?.name ?? (active == nil ? "Zeiterfassung" : "Unbekanntes Projekt"))
                 .font(.headline)
@@ -116,6 +114,7 @@ struct DashboardView: View {
                     Button(action: createTapped) { Label("Starten", systemImage: "play.fill") }
                         .buttonStyle(.borderedProminent)
                         .tint(.theme)
+                        .foregroundStyle(Color.themeForeground)
                 }
             }
         }
