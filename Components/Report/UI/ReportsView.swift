@@ -11,7 +11,32 @@ struct ReportTimesheet {
     let beginDate: Date?
 }
 
+struct ReportResult {
+    let timesheets: [KimaiTimesheet]
+    let totalDuration: TimeInterval
+    let totalRate: Double
+    let weeklyTotals: [TimeInterval]
+    let hasRunningEntries: Bool
+}
+
+private struct ReportSelection: Equatable {
+    let date: Date
+    let project: Int?
+    let type: ReportType
+    let calendar: Calendar
+}
+
+private struct CachedReport {
+    let selection: ReportSelection
+    let timesheets: [KimaiTimesheet]
+    let totalDuration: TimeInterval
+    let totalRate: Double
+    let weekdayDurations: [TimeInterval]
+    let running: [(begin: Date, weekday: Int?)]
+}
+
 class ReportViewModel: ObservableObject {
+    private var cachedReport: CachedReport?
     private var cachedTimesheets: [KimaiTimesheet]?
     private var cachedTimeZone: TimeZone?
     private var preparedTimesheets: [ReportTimesheet] = []
@@ -19,11 +44,57 @@ class ReportViewModel: ObservableObject {
     func prepareTimesheets(_ timesheets: [KimaiTimesheet]) -> [ReportTimesheet] {
         let timeZone = TimeZone.current
         if cachedTimesheets != timesheets || cachedTimeZone != timeZone {
+            cachedReport = nil
             preparedTimesheets = timesheets.map { ReportTimesheet(timesheet: $0, beginDate: $0.getBeginDate()) }
             cachedTimesheets = timesheets
             cachedTimeZone = timeZone
         }
         return preparedTimesheets
+    }
+
+    func reportResult(records: [KimaiTimesheet], date: Date, project: Int?, type: ReportType, now: Date = .now) -> ReportResult {
+        let prepared = prepareTimesheets(records)
+        let selection = ReportSelection(date: date, project: project, type: type, calendar: .current)
+        if cachedReport?.selection != selection {
+            var selected: [KimaiTimesheet] = []
+            var duration: TimeInterval = 0
+            var rate: Double = 0
+            var weekdays = Array(repeating: TimeInterval.zero, count: 8)
+            var running: [(begin: Date, weekday: Int?)] = []
+            for entry in prepared {
+                if let project = project, entry.timesheet.project != project { continue }
+                guard let begin = entry.beginDate else { continue }
+                let matches: Bool
+                switch type {
+                case .day: matches = begin.isDay(of: date)
+                case .week: matches = begin.isInMondayWeek(of: date)
+                case .month: matches = begin.isMonth(of: date)
+                case .year: matches = begin.isYear(of: date)
+                }
+                if !matches { continue }
+                selected.append(entry.timesheet)
+                rate += entry.timesheet.rate
+                let weekday = begin.getWeekday().flatMap { (1...7).contains($0) ? $0 : nil }
+                if let end = entry.timesheet.getEndDate() {
+                    let seconds = end.timeIntervalSince(begin)
+                    duration += seconds
+                    if let weekday = weekday { weekdays[weekday] += seconds }
+                } else {
+                    // Missing and unparseable end dates both use the current time in calculateDuration().
+                    running.append((begin, weekday))
+                }
+            }
+            cachedReport = CachedReport(selection: selection, timesheets: selected, totalDuration: duration, totalRate: rate, weekdayDurations: weekdays, running: running)
+        }
+        let cached = cachedReport!
+        var duration = cached.totalDuration
+        var weekdays = cached.weekdayDurations
+        for entry in cached.running {
+            let seconds = now.timeIntervalSince(entry.begin)
+            duration += seconds
+            if let weekday = entry.weekday { weekdays[weekday] += seconds }
+        }
+        return ReportResult(timesheets: cached.timesheets, totalDuration: duration, totalRate: cached.totalRate, weeklyTotals: weekdays.map { $0 / 3600 }, hasRunningEntries: !cached.running.isEmpty)
     }
 
     @Published var groupedData: [KimaiCustomer: [KimaiProject: Double]] = [:] // Customer -> Project -> Total Hours
@@ -66,28 +137,24 @@ struct ReportsView: View {
     
     
     // MARK: - View
-    func timesheetsFiltered(using viewModel: ReportViewModel) -> [ReportTimesheet] {
-        let prepared = viewModel.prepareTimesheets(timesheets)
-        return prepared.filter { entry in
-            if let project = selectedProject, entry.timesheet.project != project { return false }
-            guard let begin = entry.beginDate else { return false }
-            switch selectedReportType {
-            case .day: return begin.isDay(of: selectedDate)
-            case .week: return begin.isInMondayWeek(of: selectedDate)
-            case .month: return begin.isMonth(of: selectedDate)
-            case .year: return begin.isYear(of: selectedDate)
-            }
-        }
+    func reportResult(using viewModel: ReportViewModel, now: Date = .now) -> ReportResult {
+        viewModel.reportResult(records: timesheets, date: selectedDate, project: selectedProject, type: selectedReportType, now: now)
     }
-    
-    
+
     var body: some View {
-        let filtered = timesheetsFiltered(using: viewModel)
+        let result = reportResult(using: viewModel)
         return VStack(spacing: 0){
             getHeader()
-            getReportChart(timesheets: filtered)
+            if result.hasRunningEntries {
+                TimelineView(.periodic(from: .now, by: 1)) { context in
+                    getReportChart(result: reportResult(using: viewModel, now: context.date))
+                }
                 .frame(maxHeight: 100)
-            getBody(timesheets: filtered.map(\.timesheet))
+            } else {
+                getReportChart(result: result)
+                    .frame(maxHeight: 100)
+            }
+            getBody(timesheets: result.timesheets)
         }
         .onAppear {
             viewModel.processRecords(records: timesheets, projects: projects, customers: customers)
@@ -192,12 +259,12 @@ extension ReportsView {
     }
     
     @ViewBuilder
-    func getReportChart(timesheets: [ReportTimesheet]) -> some View {
-        ReportSummaryView(timesheets: timesheets.map(\.timesheet))
+    func getReportChart(result: ReportResult) -> some View {
+        ReportSummaryView(timesheets: result.timesheets, cachedTotals: (result.totalDuration, result.totalRate))
         
         switch(selectedReportType){
         case .week:
-            let totals = weeklyTotals(for: timesheets)
+            let totals = result.weeklyTotals
             ChartBarView([
                 .init(id: 0, name: "Mo", value: totals[2]),
                 .init(id: 1, name: "Di", value: totals[3]),
@@ -211,16 +278,5 @@ extension ReportsView {
             ChartPieView(customers.map { .init(id: $0.id, name: $0.name, value: 10) })
                 .chartLegend(.hidden)
         }
-    }
-}
-
-extension ReportsView {
-    func weeklyTotals(for timesheets: [ReportTimesheet]) -> [TimeInterval] {
-        var totals = Array(repeating: TimeInterval.zero, count: 8)
-        for entry in timesheets {
-            guard let weekday = entry.beginDate?.getWeekday(), (1...7).contains(weekday) else { continue }
-            totals[weekday] += entry.timesheet.calculateDuration() ?? 0
-        }
-        return totals.map { $0 / 3600 }
     }
 }

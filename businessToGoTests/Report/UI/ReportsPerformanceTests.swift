@@ -58,12 +58,12 @@ final class ReportsPerformanceTests: XCTestCase {
     }
 
     func testWeeklyChartCalculationsMatchFixture() {
-        let filtered = report.timesheetsFiltered(using: viewModel)
-        let records = filtered.map(\.timesheet)
+        let result = report.reportResult(using: viewModel)
+        let records = result.timesheets
 
         XCTAssertEqual(records.map(\.id), (0..<10_000).filter { $0 % 100 < 7 })
         XCTAssertEqual(KimaiTimesheet.totalHours(of: records), 700 * 3_600, accuracy: 0.001)
-        let totals = report.weeklyTotals(for: filtered)
+        let totals = result.weeklyTotals
         for weekday in 1...7 {
             let previousTotal = KimaiTimesheet.totalHours(of: records.filter {
                 $0.getBeginDate()?.getWeekday() == weekday
@@ -74,11 +74,11 @@ final class ReportsPerformanceTests: XCTestCase {
     }
 
     func testSwitchingWeeksAndProjectsMatchesPreviousFiltering() throws {
-        _ = report.timesheetsFiltered(using: viewModel)
+        _ = report.reportResult(using: viewModel)
         selectedDate = try XCTUnwrap(Calendar.current.date(byAdding: .day, value: 7, to: selectedDate))
         selectedProject = 2
 
-        let actual = report.timesheetsFiltered(using: viewModel).map(\.timesheet)
+        let actual = report.reportResult(using: viewModel).timesheets
         let expected = report.timesheets.filter {
             $0.project == selectedProject && ($0.getBeginDate()?.isInMondayWeek(of: selectedDate) ?? false)
         }
@@ -98,10 +98,83 @@ final class ReportsPerformanceTests: XCTestCase {
         XCTAssertEqual(viewModel.prepareTimesheets(original).map(\.beginDate), first.map(\.beginDate))
     }
 
+    func testCachedReportTracksRunningAndInvalidEndEntries() throws {
+        let begin = try XCTUnwrap(report.timesheets[0].getBeginDate())
+        var running = report.timesheets[0]
+        running.end = nil
+        var invalidEnd = report.timesheets[0]
+        invalidEnd.id = 20_000
+        invalidEnd.end = "invalid"
+        let records = [report.timesheets[0], running, invalidEnd]
+        let first = viewModel.reportResult(records: records, date: selectedDate, project: nil, type: .week, now: begin.addingTimeInterval(7_200))
+        let later = viewModel.reportResult(records: records, date: selectedDate, project: nil, type: .week, now: begin.addingTimeInterval(10_800))
+        let weekday = try XCTUnwrap(begin.getWeekday())
+
+        XCTAssertTrue(first.hasRunningEntries)
+        XCTAssertEqual(first.totalDuration, 5 * 3_600, accuracy: 0.001)
+        XCTAssertEqual(later.totalDuration, 7 * 3_600, accuracy: 0.001)
+        XCTAssertEqual(first.weeklyTotals[weekday], 5, accuracy: 0.001)
+        XCTAssertEqual(later.weeklyTotals[weekday], 7, accuracy: 0.001)
+    }
+
+    func testReportCacheInvalidatesOnRecordAndSelectionChanges() throws {
+        let original = Array(report.timesheets.prefix(8))
+        let first = viewModel.reportResult(records: original, date: selectedDate, project: nil, type: .week)
+        let filtered = viewModel.reportResult(records: original, date: selectedDate, project: 2, type: .week)
+        let nextWeek = try XCTUnwrap(Calendar.current.date(byAdding: .day, value: 7, to: selectedDate))
+        let next = viewModel.reportResult(records: original, date: nextWeek, project: nil, type: .week)
+        var edited = original[0]
+        edited.end = nil
+        let changed = viewModel.reportResult(records: [edited], date: selectedDate, project: nil, type: .week)
+
+        XCTAssertEqual(first.timesheets.count, 7)
+        XCTAssertEqual(filtered.timesheets.map(\.project), [2])
+        XCTAssertEqual(next.timesheets.map(\.id), [7])
+        XCTAssertNil(changed.timesheets.first?.end)
+        XCTAssertTrue(changed.hasRunningEntries)
+        let stopped = viewModel.reportResult(records: [original[0]], date: selectedDate, project: nil, type: .week)
+        XCTAssertFalse(stopped.hasRunningEntries)
+        XCTAssertEqual(stopped.totalDuration, 3_600, accuracy: 0.001)
+    }
+
+    func testReportTypesMatchPreviousSelectionAndTotals() {
+        let records = Array(report.timesheets.prefix(100))
+        for type in [ReportType.day, .week, .month, .year] {
+            let result = viewModel.reportResult(records: records, date: selectedDate, project: nil, type: type)
+            let expected = records.filter { record in
+                guard let begin = record.getBeginDate() else { return false }
+                switch type {
+                case .day: return begin.isDay(of: selectedDate)
+                case .week: return begin.isInMondayWeek(of: selectedDate)
+                case .month: return begin.isMonth(of: selectedDate)
+                case .year: return begin.isYear(of: selectedDate)
+                }
+            }
+            XCTAssertEqual(result.timesheets, expected)
+            XCTAssertEqual(result.totalDuration, KimaiTimesheet.totalHours(of: expected), accuracy: 0.001)
+            XCTAssertEqual(result.totalRate, expected.reduce(0) { $0 + $1.rate }, accuracy: 0.001)
+        }
+    }
+
     func testInitialDatePreparationPerformance() {
         let records = report.timesheets
         measure(metrics: [XCTClockMetric()]) {
             preparedChart = ReportViewModel().prepareTimesheets(records)
+        }
+    }
+
+    func testInitialReportPreparationPerformance() {
+        measure(metrics: [XCTClockMetric()]) {
+            preparedChart = report.reportResult(using: ReportViewModel())
+        }
+    }
+
+    func testCachedReportPreparationPerformance() {
+        _ = report.reportResult(using: viewModel)
+        measure(metrics: [XCTClockMetric()]) {
+            for _ in 0..<100 {
+                preparedChart = report.getReportChart(result: report.reportResult(using: viewModel))
+            }
         }
     }
 
@@ -115,7 +188,7 @@ final class ReportsPerformanceTests: XCTestCase {
         measure(metrics: [XCTClockMetric()]) {
             selectedDate = nextWeek
             nextWeek = nextWeek == firstWeek ? secondWeek : firstWeek
-            preparedChart = report.getReportChart(timesheets: report.timesheetsFiltered(using: viewModel))
+            preparedChart = report.getReportChart(result: report.reportResult(using: viewModel))
         }
     }
 }
