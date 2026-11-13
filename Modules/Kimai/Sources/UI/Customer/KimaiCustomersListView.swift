@@ -93,7 +93,7 @@ public struct KimaiCustomersListView: View {
                                 .foregroundStyle(Color.primary)
                                 .accessibilityLabel("Projekt für \(customer.name) erstellen")
                         }
-                        .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
+                        .listRowInsets(EdgeInsets(top: 0, leading: 28, bottom: 0, trailing: 28))
                         .listRowBackground(CustomerGroupBackground(top: true, bottom: customerProjects.isEmpty))
                         .swipeActions(edge: .trailing) {
                             Button("Delete", role: .destructive) { customerDeleteTapped(customer) }
@@ -105,7 +105,7 @@ public struct KimaiCustomersListView: View {
                                     .padding(.leading, 16)
                             }
                             .buttonStyle(.plain)
-                            .listRowInsets(EdgeInsets(top: 0, leading: 12, bottom: 0, trailing: 12))
+                            .listRowInsets(EdgeInsets(top: 0, leading: 28, bottom: 0, trailing: 28))
                             .listRowBackground(CustomerGroupBackground(top: false, bottom: project.id == customerProjects.last?.id))
                             .swipeActions(edge: .trailing) {
                                 Button("Delete", role: .destructive) { projectDeleteTapped(project) }
@@ -115,6 +115,7 @@ public struct KimaiCustomersListView: View {
                     }
                 }
             }
+            .listStyle(.plain)
             .scrollContentBackground(.hidden)
             .modifier(CompactSectionSpacing())
             .environment(\.defaultMinListHeaderHeight, 0)
@@ -129,12 +130,13 @@ private struct CustomerGroupBackground: View {
 
     var body: some View {
         GeometryReader { geometry in
-            RoundedRectangle(cornerRadius: 9)
+            RoundedRectangle(cornerRadius: 14)
                 .fill(Color.homeCard)
-                .frame(height: geometry.size.height + (top ? 0 : 9) + (bottom ? 0 : 9))
-                .offset(y: top ? 0 : -9)
+                .frame(height: geometry.size.height + (top ? 0 : 14) + (bottom ? 0 : 14))
+                .offset(y: top ? 0 : -14)
         }
         .clipped()
+        .padding(.horizontal, 16)
     }
 }
 
