@@ -64,11 +64,14 @@ struct DashboardView: View {
                         }
                     }
                     .padding(.horizontal, 12)
-                    .background(Color(uiColor: .secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 9))
+                    .background(Color.homeCard, in: RoundedRectangle(cornerRadius: 9))
+                    .overlay(RoundedRectangle(cornerRadius: 9).strokeBorder(Color.primary.opacity(0.1)))
+                    .shadow(color: .black.opacity(0.06), radius: 3, y: 1)
                 }
             }
             .padding(18)
         }
+        .background(Color.homeCanvas.ignoresSafeArea())
     }
 
     private var timerPanel: some View {
@@ -121,6 +124,8 @@ struct DashboardView: View {
         .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
         .foregroundStyle(active == nil ? Color.primary : Color.white)
-        .background(active == nil ? Color(uiColor: .secondarySystemGroupedBackground) : teal, in: RoundedRectangle(cornerRadius: 14))
+        .background(active == nil ? Color.homeCard : teal, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(active == nil ? Color.primary.opacity(0.1) : .clear))
+        .shadow(color: active == nil ? .black.opacity(0.06) : .clear, radius: 3, y: 1)
     }
 }
