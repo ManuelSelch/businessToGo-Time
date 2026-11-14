@@ -94,16 +94,11 @@ public class KimaiService {
         let users = users
         let timesheets = timesheets
         let configured = configured
-        return syncCoordinator.operation { check in
+        let coordinator = syncCoordinator
+        return coordinator.operation { check in
             guard configured else { throw ServiceError.accountChanged }
-            try check()
-            _ = try await customers.sync()
-            try check()
-            _ = try await projects.sync()
-            try check()
-            _ = try await activities.sync()
-            try check()
-            _ = try await users.sync()
+            try await coordinator.synchronizeReferenceData(customers: customers, projects: projects,
+                activities: activities, users: users, check: check)
             try check()
             _ = try await timesheets.sync()
         }

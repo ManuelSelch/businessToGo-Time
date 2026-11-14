@@ -76,6 +76,11 @@ public struct KimaiCustomerService {
     public func sync() async throws -> ([KimaiCustomer], [KimaiTeam]) {
         let session = try SyncSession(connection: customerRepository.connection())
         let (remoteCustomers, remoteTeams) = try await fetch()
+        return try await synchronize(remoteCustomers: remoteCustomers, remoteTeams: remoteTeams, session: session)
+    }
+
+    public func synchronize(remoteCustomers: [KimaiCustomer], remoteTeams: [KimaiTeam],
+                            session: SyncSession) async throws -> ([KimaiCustomer], [KimaiTeam]) {
         try session.check()
         let syncedCustomers = try await customerSyncService.sync(remoteRecords: remoteCustomers, session: session)
         try session.check()

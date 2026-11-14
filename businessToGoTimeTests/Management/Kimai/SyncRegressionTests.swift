@@ -13,6 +13,38 @@ final class SyncRegressionTests: XCTestCase {
         sync = nil
     }
 
+    func testReferenceCollectionsFetchConcurrentlyAndUploadsRemainOrdered() async throws {
+        try await sync.synchronizeReferenceCollections()
+
+        sync.shouldHaveOrderedReferenceUploads()
+        sync.shouldHaveRemappedRelationshipChain()
+    }
+
+    func testEditDuringConcurrentReferenceFetchIsUploadedWithoutLoss() async throws {
+        try await sync.editProjectDuringReferenceFetch()
+
+        sync.shouldHaveUploadedLatestReferenceEdit()
+        sync.shouldHaveRemappedRelationshipChain()
+    }
+
+    func testFailedReferenceFetchCancelsSiblingsWithoutAcknowledgingChanges() async throws {
+        try await sync.rejectReferenceFetch()
+
+        sync.shouldHaveUnchangedReferenceChanges()
+    }
+
+    func testAccountSwitchDuringReferenceFetchCannotApplySnapshots() async throws {
+        try await sync.switchAccountDuringReferenceFetch()
+
+        sync.shouldHaveUnchangedReferenceChanges()
+    }
+
+    func testInvalidatedReferenceFetchCancelsAllRequests() async throws {
+        try await sync.cancelReferenceFetch()
+
+        sync.shouldHaveUnchangedReferenceChanges()
+    }
+
     func testFailedFetchPreservesCachedRecordsAndPendingEdits() async throws {
         try sync.cacheRecord(1, named: "cached")
         try sync.cacheRecord(2, named: "original")

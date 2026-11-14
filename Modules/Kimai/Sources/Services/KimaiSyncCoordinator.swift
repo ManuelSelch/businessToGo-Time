@@ -2,6 +2,8 @@ import Foundation
 import SQLite
 import Dependencies
 import OfflineSyncCore
+import OfflineSyncServices
+import KimaiCore
 
 /// Owns cancellation/generation across all entity stages, not just one HTTP call.
 final class KimaiSyncCoordinator {
@@ -42,6 +44,79 @@ final class KimaiSyncCoordinator {
             defer { finish(id) }
             try await withTaskCancellationHandler(operation: { try await task.value }, onCancel: { task.cancel() })
         }
+    }
+
+    private enum ReferenceSnapshot {
+        case customers([KimaiCustomer], [KimaiTeam])
+        case projects([KimaiProject])
+        case activities([KimaiActivity])
+        case users([KimaiUser])
+    }
+
+    private struct ReferenceSnapshots {
+        var customers: [KimaiCustomer] = []
+        var teams: [KimaiTeam] = []
+        var projects: [KimaiProject] = []
+        var activities: [KimaiActivity] = []
+        var users: [KimaiUser] = []
+    }
+
+    func synchronizeReferenceData(customers: KimaiCustomerService, projects: RecordService<KimaiProject>,
+                                  activities: RecordService<KimaiActivity>, users: RecordService<KimaiUser>,
+                                  check: @escaping () throws -> Void) async throws {
+        try check()
+        // One lease covers the whole batch. Child tasks fetch only; none acquire
+        // another lease, write SQLite or acknowledge pending operations.
+        let session = try SyncSession(connection: projects.repository.connection())
+        try session.check()
+        let snapshots = try await withThrowingTaskGroup(of: ReferenceSnapshot.self) { group -> ReferenceSnapshots in
+            group.addTask {
+                try check()
+                let (records, teams) = try await customers.fetch()
+                try check()
+                return .customers(records, teams)
+            }
+            group.addTask {
+                try check()
+                let records = try await projects.fetch()
+                try check()
+                return .projects(records)
+            }
+            group.addTask {
+                try check()
+                let records = try await activities.fetch()
+                try check()
+                return .activities(records)
+            }
+            group.addTask {
+                try check()
+                let records = try await users.fetch()
+                try check()
+                return .users(records)
+            }
+            var result = ReferenceSnapshots()
+            // A failed fetch throws immediately and cancels/drains its siblings.
+            // Do not start reconciliation until every collection has arrived.
+            for try await snapshot in group {
+                switch snapshot {
+                case let .customers(records, teams): result.customers = records; result.teams = teams
+                case let .projects(records): result.projects = records
+                case let .activities(records): result.activities = records
+                case let .users(records): result.users = records
+                }
+            }
+            return result
+        }
+        try check()
+        try session.check()
+        _ = try await customers.synchronize(remoteCustomers: snapshots.customers, remoteTeams: snapshots.teams, session: session)
+        try check()
+        _ = try await projects.synchronize(snapshots.projects, session: session)
+        try check()
+        _ = try await activities.synchronize(snapshots.activities, session: session)
+        try check()
+        _ = try await users.synchronize(snapshots.users, session: session)
+        try check()
     }
 
     private func start(expected: UUID, work: @escaping () async throws -> Void) throws -> (UUID, Task<Void, Error>) {

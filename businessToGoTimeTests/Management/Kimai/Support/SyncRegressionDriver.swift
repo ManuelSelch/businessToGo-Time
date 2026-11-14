@@ -71,12 +71,18 @@ private final class ControlledRemote: RequestServiceProtocol {
 private final class RelatedRemote<Model: TableProtocol>: RequestServiceProtocol {
     var uploads: [Model] = []
     var records: [Model] = []
+    var onFetch: (() async throws -> Void)?
+    var onInsert: (() -> Void)?
     let serverID: Int
 
     init(serverID: Int) { self.serverID = serverID }
     func setPlugins(_ plugins: [PluginType]) {}
-    func fetch() async throws -> [Model] { records }
+    func fetch() async throws -> [Model] {
+        try await onFetch?()
+        return records
+    }
     func insert(_ model: Model) async throws -> Model {
+        onInsert?()
         uploads.append(model)
         var result = model
         result.id = serverID
@@ -84,6 +90,50 @@ private final class RelatedRemote<Model: TableProtocol>: RequestServiceProtocol 
     }
     func update(_ model: Model) async throws -> Model { throw FixtureFailure.unexpectedNetwork }
     func delete(_ id: Int) async throws { throw FixtureFailure.unexpectedNetwork }
+}
+
+private actor ReferenceFetchGate {
+    private var released = false
+    private var waiters: [String: CheckedContinuation<Void, Error>] = [:]
+    private var failed: Set<String> = []
+    private(set) var cancelled: Set<String> = []
+    private(set) var maximum = 0
+
+    func wait(_ name: String, started: XCTestExpectation) async throws {
+        try await withTaskCancellationHandler(operation: {
+            try _Concurrency.Task.checkCancellation()
+            if failed.contains(name) { throw FixtureFailure.fetch }
+            if released { return }
+            try await withCheckedThrowingContinuation { continuation in
+                waiters[name] = continuation
+                maximum = max(maximum, waiters.count)
+                started.fulfill()
+            }
+        }, onCancel: { _Concurrency.Task { await self.cancel(name) } })
+    }
+
+    private func cancel(_ name: String) {
+        cancelled.insert(name)
+        waiters.removeValue(forKey: name)?.resume(throwing: CancellationError())
+    }
+
+    func fail(_ name: String) {
+        failed.insert(name)
+        waiters.removeValue(forKey: name)?.resume(throwing: FixtureFailure.fetch)
+    }
+
+    func release() {
+        released = true
+        for continuation in waiters.values { continuation.resume() }
+        waiters = [:]
+    }
+}
+
+private final class UploadOrderProbe {
+    private let lock = NSLock()
+    private var entries: [String] = []
+    func record(_ name: String) { lock.lock(); entries.append(name); lock.unlock() }
+    var names: [String] { lock.lock(); defer { lock.unlock() }; return entries }
 }
 
 private actor SyncGate {
@@ -139,6 +189,8 @@ final class SyncRegressionDriver {
     private var repository: DatabaseRepository<SyncRecord>!
     private var service: RecordService<SyncRecord>!
     private var customerService: KimaiCustomerService?
+    private var customerRemote: RelatedRemote<KimaiCustomerDTO>?
+    private let referenceUploads = UploadOrderProbe()
     private var projectService: RecordService<KimaiProject>?
     private var projectRepository: DatabaseRepository<KimaiProject>?
     private var projectRemote: RelatedRemote<KimaiProject>?
@@ -369,9 +421,11 @@ final class SyncRegressionDriver {
 
     func createRelatedOfflineRecords() throws {
         let customers = DatabaseRepository<KimaiCustomer>("kimai_customers")
+        let customerRequests = RelatedRemote<KimaiCustomerDTO>(serverID: 101)
+        customerRemote = customerRequests
         customerService = KimaiCustomerService(customerRepository: customers,
             teamRepository: DatabaseRepository<KimaiTeam>("kimai_teams"),
-            requestService: RelatedRemote<KimaiCustomerDTO>(serverID: 101))
+            requestService: customerRequests)
         var customer = KimaiCustomer()
         customer.name = "offline customer"
         try customerService!.createCustomer(customer)
@@ -416,6 +470,106 @@ final class SyncRegressionDriver {
         _ = try await projectService!.sync()
         _ = try await activityService!.sync()
         _ = try await timesheetService!.sync()
+    }
+
+    private enum ReferenceOutcome { case success, failure, accountSwitch, cancel, edit }
+
+    func synchronizeReferenceCollections(file: StaticString = #filePath, line: UInt = #line) async throws {
+        try await exerciseReferenceFetch(.success, file: file, line: line)
+    }
+    func rejectReferenceFetch(file: StaticString = #filePath, line: UInt = #line) async throws {
+        try await exerciseReferenceFetch(.failure, file: file, line: line)
+    }
+    func switchAccountDuringReferenceFetch(file: StaticString = #filePath, line: UInt = #line) async throws {
+        try await exerciseReferenceFetch(.accountSwitch, file: file, line: line)
+    }
+    func cancelReferenceFetch(file: StaticString = #filePath, line: UInt = #line) async throws {
+        try await exerciseReferenceFetch(.cancel, file: file, line: line)
+    }
+    func editProjectDuringReferenceFetch(file: StaticString = #filePath, line: UInt = #line) async throws {
+        try await exerciseReferenceFetch(.edit, file: file, line: line)
+    }
+
+    private func exerciseReferenceFetch(_ outcome: ReferenceOutcome, file: StaticString = #filePath, line: UInt = #line) async throws {
+        try createRelatedOfflineRecords()
+        let users = RelatedRemote<KimaiUser>(serverID: 501)
+        let userService = RecordService(repository: DatabaseRepository<KimaiUser>("kimai_users"), requestService: users)
+        let coordinator = KimaiSyncCoordinator()
+        let gate = ReferenceFetchGate()
+        let started = XCTestExpectation(description: "all four reference requests in flight")
+        started.expectedFulfillmentCount = 4
+        let finished = XCTestExpectation(description: "reference operation completed")
+        customerRemote!.onFetch = { try await gate.wait("customers", started: started) }
+        projectRemote!.onFetch = { try await gate.wait("projects", started: started) }
+        activityRemote!.onFetch = { try await gate.wait("activities", started: started) }
+        users.onFetch = { try await gate.wait("users", started: started) }
+        customerRemote!.onInsert = { [referenceUploads] in referenceUploads.record("customers") }
+        projectRemote!.onInsert = { [referenceUploads] in referenceUploads.record("projects") }
+        activityRemote!.onInsert = { [referenceUploads] in referenceUploads.record("activities") }
+        timesheetRemote!.onFetch = { [referenceUploads] in referenceUploads.record("timesheets-fetch") }
+        timesheetRemote!.onInsert = { [referenceUploads] in referenceUploads.record("timesheets") }
+        let operation = coordinator.operation { [self] check in
+            try await coordinator.synchronizeReferenceData(customers: customerService!, projects: projectService!,
+                activities: activityService!, users: userService, check: check)
+            try check()
+            _ = try await timesheetService!.sync()
+        }
+        let task = _Concurrency.Task {
+            defer { finished.fulfill() }
+            try await operation()
+        }
+        await testCase!.fulfillment(of: [started], timeout: 2)
+        let maximum = await gate.maximum
+        XCTAssertEqual(maximum, 4, file: file, line: line)
+        XCTAssertTrue(referenceUploads.names.isEmpty, "No uploads before all snapshots arrive", file: file, line: line)
+        switch outcome {
+        case .success: break
+        case .edit:
+            var project = try projectService!.get().first!
+            project.name = "edited during download"
+            try projectService!.update(project)
+        case .failure: await gate.fail("projects")
+        case .accountSwitch: switchAccount(to: "b")
+        case .cancel: coordinator.invalidate()
+        }
+        if outcome == .failure || outcome == .cancel {
+            await testCase!.fulfillment(of: [finished], timeout: 2)
+        }
+        await gate.release()
+        let result = await task.result
+        if outcome == .success || outcome == .edit { try result.get() }
+        else {
+            if case .success = result { XCTFail("Expected rejected reference sync", file: file, line: line) }
+            let cancelled = await gate.cancelled
+            if outcome == .failure { XCTAssertEqual(cancelled, ["customers", "activities", "users"], file: file, line: line) }
+            if outcome == .cancel { XCTAssertEqual(cancelled.count, 4, file: file, line: line) }
+            if outcome == .accountSwitch {
+                XCTAssertEqual(try DatabaseRepository<KimaiProject>("kimai_projects").get().count, 0, file: file, line: line)
+                switchAccount(to: "a")
+            }
+        }
+    }
+
+    func shouldHaveUploadedLatestReferenceEdit(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertEqual(projectRemote?.uploads.first?.name, "edited during download", file: file, line: line)
+        XCTAssertEqual(try projectRepository?.get().first?.name, "edited during download", file: file, line: line)
+    }
+
+    func shouldHaveOrderedReferenceUploads(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertEqual(referenceUploads.names, ["customers", "projects", "activities", "timesheets-fetch", "timesheets"], file: file, line: line)
+    }
+
+    func shouldHaveUnchangedReferenceChanges(file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(referenceUploads.names.isEmpty, file: file, line: line)
+        XCTAssertEqual(try customerService?.getCustomers().map(\.name), ["offline customer"], file: file, line: line)
+        XCTAssertEqual(try projectService?.get().map(\.id), [preSyncProject!.id], file: file, line: line)
+        XCTAssertEqual(try activityService?.get().count, 1, file: file, line: line)
+        XCTAssertEqual(try timesheetService?.get().count, 1, file: file, line: line)
+        XCTAssertEqual(try customerService?.getCustomerChanges().map(\.type), [.insert], file: file, line: line)
+        XCTAssertEqual(try projectService?.getChanges().map(\.type), [.insert], file: file, line: line)
+        XCTAssertEqual(try activityService?.getChanges().map(\.type), [.insert], file: file, line: line)
+        XCTAssertEqual(try timesheetService?.getChanges().map(\.type), [.insert], file: file, line: line)
+        XCTAssertEqual(try projectRepository?.get().first?.customer, localCustomerID, file: file, line: line)
     }
 
     func rejectRecordUpdates() throws {
