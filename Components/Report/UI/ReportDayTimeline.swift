@@ -147,7 +147,7 @@ struct ReportWeekEntries: View {
                                         Text("\(entry.getBeginDate()?.formatted(date: .omitted, time: .shortened) ?? "--:--") – \(entry.getEndDate()?.formatted(date: .omitted, time: .shortened) ?? "Läuft")").font(.caption2).foregroundStyle(.secondary)
                                     }
                                     Spacer()
-                                    if timesheetChanges.contains(where: { $0.recordID == entry.id }) { Image(systemName: "arrow.triangle.2.circlepath").accessibilityLabel("Noch nicht synchronisiert") }
+                                    if timesheetChanges.contains(where: { $0.recordID == entry.id }) { Circle().fill(.red).frame(width: 7, height: 7).accessibilityLabel("Noch nicht synchronisiert") }
                                     Text(entry.getDuration()).font(.subheadline.monospacedDigit())
                                 }
                             }
