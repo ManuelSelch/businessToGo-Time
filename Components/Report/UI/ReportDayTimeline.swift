@@ -13,14 +13,14 @@ struct ReportDayTimeline: View {
     let edit: (KimaiTimesheet) -> Void
     let delete: (KimaiTimesheet) -> Void
 
-    private var positions: [ReportTimelinePosition] {
-        ReportTimelineLayout.positions(timesheets.compactMap { entry in
+    private var inputs: [ReportTimelineInput] {
+        timesheets.compactMap { entry in
             guard let begin = entry.getBeginDate() else { return nil }
             let start = Calendar.current.startOfDay(for: begin)
             let end = entry.getEndDate() ?? Date.now
             let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: start) ?? end
             return ReportTimelineInput(id: entry.id, startMinute: begin.timeIntervalSince(start) / 60, durationMinutes: max(0, min(end, nextDay).timeIntervalSince(begin) / 60))
-        })
+        }
     }
 
     var body: some View {
@@ -32,10 +32,13 @@ struct ReportDayTimeline: View {
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            ScrollViewReader { proxy in
-                ScrollView {
+            let entries = inputs
+            let positions = ReportTimelineLayout.positions(entries)
+            let range = ReportTimelineLayout.hourRange(entries) ?? 0...60
+            let startOffset = Double(range.lowerBound * 2)
+            ScrollView {
                     ZStack(alignment: .topLeading) {
-                        ForEach(0..<24, id: \.self) { hour in
+                        ForEach((range.lowerBound / 60)...(range.upperBound / 60), id: \.self) { hour in
                             HStack(spacing: 8) {
                                 Text(String(format: "%02d:00", hour))
                                     .font(.caption2.monospacedDigit())
@@ -43,25 +46,20 @@ struct ReportDayTimeline: View {
                                     .frame(width: 38, alignment: .leading)
                                 Rectangle().fill(Color.secondary.opacity(0.18)).frame(height: 1)
                             }
-                            .offset(y: CGFloat(hour * 120))
-                            .id(hour)
+                            .offset(y: CGFloat(hour * 120 - range.lowerBound * 2))
                         }
                         ForEach(positions, id: \.id) { position in
                             if let entry = timesheets.first(where: { $0.id == position.id }) {
                                 entryCard(entry)
                                     .frame(height: CGFloat(position.height))
                                     .padding(.leading, 46)
-                                    .offset(y: CGFloat(position.top))
+                                    .offset(y: CGFloat(position.top - startOffset))
                             }
                         }
                     }
-                    .frame(height: CGFloat(max(2880, positions.map { $0.top + $0.height }.max() ?? 0)) + 20, alignment: .top)
+                    .frame(height: CGFloat(max(Double((range.upperBound - range.lowerBound) * 2), (positions.map { $0.top + $0.height }.max() ?? startOffset) - startOffset)) + 20, alignment: .top)
                     .padding(.horizontal, 16)
                     .padding(.top, 16)
-                }
-                .onAppear {
-                    if let first = positions.first { proxy.scrollTo(max(0, Int(first.top / 120) - 1), anchor: .top) }
-                }
             }
         }
     }

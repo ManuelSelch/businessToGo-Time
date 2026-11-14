@@ -29,7 +29,7 @@
 
 ## Reports
 
-- Reports offers day/week/month/year navigation with previous/next buttons and period-specific selection sheets. Day shows a time-scaled timeline; short or overlapping entries stack and display their actual times. Week groups entries by day, while month and year show expandable customer/project totals. Tap a day or week entry to edit it; long-press for editing or deletion (week also supports swipe actions). A filter sheet combines one customer, project and team, with apply, cancel and reset. Team filtering uses the selected project's customer team assignments, not the time-entry author's team.
+- Reports offers day/week/month/year navigation with previous/next buttons and period-specific selection sheets. Day shows a time-scaled timeline bounded by whole hours around its entries; short or overlapping entries stack and display their actual times. Week groups entries by day, while month and year show expandable customer/project totals. Tap a day or week entry to edit it; long-press for editing or deletion (week also supports swipe actions). A filter sheet combines one customer, project and team, with apply, cancel and reset. Team filtering uses the selected project's customer team assignments, not the time-entry author's team.
 - Week, month and year totals, bar charts and grouped rows use the selected period and combined filters. Month bars group Monday–Sunday weeks clipped to the month; year bars group by month. The day pie remains a placeholder.
 - Do not use these unverified reports for billing without comparing server data. Open-ended records use the current time when calculating duration.
 

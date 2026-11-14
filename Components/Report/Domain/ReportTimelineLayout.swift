@@ -13,6 +13,14 @@ struct ReportTimelinePosition {
 }
 
 enum ReportTimelineLayout {
+    static func hourRange(_ entries: [ReportTimelineInput]) -> ClosedRange<Int>? {
+        guard let earliest = entries.map(\.startMinute).min(),
+              let latest = entries.map({ $0.startMinute + $0.durationMinutes }).max() else { return nil }
+        let start = max(0, min(23, Int(floor(earliest / 60)))) * 60
+        let end = min(1440, max(start + 60, Int(ceil(latest / 60)) * 60))
+        return start...end
+    }
+
     static func positions(_ entries: [ReportTimelineInput]) -> [ReportTimelinePosition] {
         var bottom: Double = 0
         return entries.sorted { $0.startMinute == $1.startMinute ? $0.id < $1.id : $0.startMinute < $1.startMinute }.map { entry in
