@@ -17,16 +17,29 @@ public struct SettingsView: View {
     public var body: some View {
         VStack {
             List {
-                Button("Integrations", action: { integrationsTapped() })
-                Button("Debug", action: { debugTapped() })
-                Button("Intro", action: { introTapped() })
+                Button(action: integrationsTapped) { destinationLabel("Integrations") }
+                Button(action: debugTapped) { destinationLabel("Debug") }
+                Button(action: introTapped) { destinationLabel("Intro") }
                 
                 Button("Logout", action: { logoutTapped() })
                     .tint(Color.red)
                 
             }
+            .listStyle(.insetGrouped)
             .tint(Color.theme)
         }
+        .navigationTitle("Settings")
+    }
+
+    private func destinationLabel(_ title: String) -> some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
+        .contentShape(Rectangle())
     }
 }
 

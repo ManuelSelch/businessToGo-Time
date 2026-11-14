@@ -47,8 +47,9 @@ public struct DebugView: View {
             }
             
         }
-        .listStyle(SidebarListStyle())
-        .padding()
+        .listStyle(.insetGrouped)
+        .navigationTitle("Debug")
+        .toolbarRole(.editor)
     }
 }
 

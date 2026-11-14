@@ -25,6 +25,7 @@ struct SettingsContainer: View {
                     
                     onConnect: { store.send(.onConnect($0, $1)) }
                 )
+                .toolbarRole(.editor)
             case .debug:
                 DebugView(
                     account: store.state.account,
