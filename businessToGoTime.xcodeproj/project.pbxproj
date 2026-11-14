@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B70500013F00000000000001 /* SyncRegressionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B70500013F00000000000002 /* SyncRegressionTests.swift */; };
 		B704A0013F00000000000001 /* ReportsPerformanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B704A0013F00000000000002 /* ReportsPerformanceTests.swift */; };
 		8405CBCC2C0E030500A73E8F /* TestKimaiReducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8405CBCB2C0E030500A73E8F /* TestKimaiReducer.swift */; };
 		8405CC5B2C0E5F5000A73E8F /* Intro in Frameworks */ = {isa = PBXBuildFile; productRef = 8405CC5A2C0E5F5000A73E8F /* Intro */; };
@@ -125,6 +126,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		B70500013F00000000000002 /* SyncRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Management/Kimai/SyncRegressionTests.swift; sourceTree = "<group>"; };
 		B704A0013F00000000000002 /* ReportsPerformanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Report/UI/ReportsPerformanceTests.swift; sourceTree = "<group>"; };
 		8405CBCB2C0E030500A73E8F /* TestKimaiReducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestKimaiReducer.swift; sourceTree = "<group>"; };
 		8405CC532C0E20E000A73E8F /* Login */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Login; sourceTree = "<group>"; };
@@ -535,6 +537,7 @@
 			isa = PBXGroup;
 			children = (
 				B704A0013F00000000000002 /* ReportsPerformanceTests.swift */,
+				B70500013F00000000000002 /* SyncRegressionTests.swift */,
 				8405CBC92C0E02D700A73E8F /* Management */,
 			);
 			path = businessToGoTimeTests;
@@ -855,6 +858,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B704A0013F00000000000001 /* ReportsPerformanceTests.swift in Sources */,
+				B70500013F00000000000001 /* SyncRegressionTests.swift in Sources */,
 				8405CBCC2C0E030500A73E8F /* TestKimaiReducer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

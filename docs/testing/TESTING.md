@@ -8,6 +8,11 @@ The Pi `unit` suite runs the standalone customer-search, home-state and report-c
 
 The older Kimai reducer tests are not included: they exercise saves/deletes without established isolated storage or dependency configuration. Placeholder tests in other packages and future integration/UI scenarios are not covered by this suite.
 
+## Sync regression suite
+
+- Run the manual Pi `sync-regression` suite. See [isolation, coverage and current failures](SYNC-REGRESSIONS.md).
+- These integration tests use the local OfflineSync package, temporary SQLite files and controlled HTTP; they intentionally assert safe behavior that currently fails. They are not part of the passing `unit` suite.
+
 ## Weekly report benchmark
 
 [ReportsPerformanceTests](../../businessToGoTimeTests/Report/UI/ReportsPerformanceTests.swift) adds a focused calculation check and XCTest wall-clock benchmark for the current production report selection and `ReportsView.getReportChart(timesheets:)` path. It uses 10,000 synthetic, closed one-hour entries over 100 days: the selected Monday–Sunday week contains 700 entries and 100 hours per weekday. Fixture generation is outside the measured block; no storage, accounts or server are used.

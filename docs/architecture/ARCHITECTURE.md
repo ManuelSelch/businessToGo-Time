@@ -54,7 +54,7 @@ flowchart TD
     KimaiUI --> Chart[Chart 1.0.4]
     KimaiServices --> KimaiCore
     KimaiServices --> NetworkFoundation
-    KimaiCore --> OfflineSync[OfflineSyncCore / OfflineSyncServices 1.3.9]
+    KimaiCore --> OfflineSync[OfflineSyncCore / OfflineSyncServices local checkout]
     KimaiServices --> OfflineSync
     OfflineSync --> SQLite[SQLite.swift 0.15.3]
     OfflineSync --> Moya[Moya 15.0.3]
@@ -77,6 +77,8 @@ flowchart TD
 | Integration | State and `onConnect` action exist, but reducer is no-op. `Sources/Services/IntegrationService.swift` is not included in declared targets and uses stale APIs. Do not treat it as active persistence. |
 | Common / Foundation | Common contains formatting, date helpers, preferences and shared UI resources. CommonUI owns the adaptive teal/mint action color, contrasting action foreground, and compact icon-button dimensions; the app applies the action tint globally. NetworkFoundation supplies a Moya decoding helper. RequestFoundation is legacy/unwired in the inspected app graph with undeclared dependencies. |
 | External libraries | Redux/DI supply store/effect/global dependency behavior; OfflineSync owns repository/change tracking/sync; LoginService owns Keychain/current-account adapters. |
+
+OfflineSync is temporarily resolved from the local checkout specified in [developer setup](../development/SETUP.md#local-offlinesync-iteration), not the former 1.3.9 pin. [Isolated sync regression tests](../testing/SYNC-REGRESSIONS.md) reproduce data-integrity failures; switching the dependency source does not fix them.
 
 The current structure is feature-oriented but not strict clean architecture: app reducers call concrete services, UI contains calculations, CommonCore contains a SwiftUI JSON viewer, and external persistence concerns appear in core models. These are observations, not authorization for a big-bang rewrite.
 

@@ -16,3 +16,8 @@ suites:
         command: [xcodebuild, test, -scheme, Common-Package, -destination, "platform=iOS Simulator,name=iPhone 17", -parallel-testing-enabled, NO, CODE_SIGNING_ALLOWED=NO]
         cwd: Common
         timeoutSeconds: 600
+  sync-regression:
+    command: [xcodebuild, test, -project, businessToGoTime.xcodeproj, -scheme, businessToGoTime, -configuration, Debug, -destination, "platform=iOS Simulator,name=iPhone 17", -only-testing:businessToGoTimeTests/SyncRegressionTests, -parallel-testing-enabled, NO, -enableCodeCoverage, NO, CODE_SIGNING_ALLOWED=NO, ENABLE_TESTABILITY=YES]
+    cwd: .
+    timeoutSeconds: 1200
+    auto: manual

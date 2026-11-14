@@ -13,6 +13,13 @@
 2. Git/SwiftPM network access to GitHub dependencies. Router is referenced through `git@github.com:ManuelSelch/Router.git`; configure your SSH identity/access, or explicitly approve a project URL change rather than embedding credentials.
 3. For physical devices, choose a development team and provisioning profile appropriate to your account. Simulator baseline builds disable signing; do not change bundle IDs/signing globally to fix a simulator error.
 
+## Local OfflineSync iteration
+
+- Kimai and Integration temporarily use `.package(path:)` instead of OfflineSync 1.3.9 from GitHub. Xcode also resolves transitive OfflineSync references to this local package.
+- Required checkout: `/Users/manuelselch/Documents/A_Personal/50 Coding/52 iOS/52.01 Packages/OfflineSync`. Manifest paths are relative to the current repository layout; adjust them if moving the checkout or using a differently located worktree.
+- Open the local package alongside the app in Xcode to edit it. There is no remote fallback: changes in that checkout are immediately consumed by app builds and the [sync regression suite](../testing/SYNC-REGRESSIONS.md).
+- App integration regressions live in this repository; OfflineSync implementation changes must be committed separately in its owning repository. Existing module lockfiles are historical standalone resolutions; the app workspace lockfile governs app builds.
+
 ## Inspect before building
 
 ```sh

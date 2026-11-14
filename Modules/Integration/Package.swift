@@ -9,7 +9,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ManuelSelch/Redux", .upToNextMajor(from: "1.2.12")),
-        .package(url: "https://github.com/ManuelSelch/OfflineSync", .upToNextMajor(from: "1.3.9"))
+        .package(path: "../../../../../../50 Coding/52 iOS/52.01 Packages/OfflineSync")
     ],
     targets: [
         .target(
