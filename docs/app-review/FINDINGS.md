@@ -12,7 +12,7 @@ Evidence is based on `de9e71e`, reviewed 2026-10-25. App-owned paths below are r
 
 **Update:** The user chose to remove the unavailable Boarding dependency. A subsequent generic iOS simulator app build succeeded; fresh-checkout and test execution remain unverified.
 - **Severity:** HIGH (delivery blocker). **Evidence:** reproduced build/build-for-testing failure; [baseline](BASELINE.md).
-- **Location:** `Modules/Boarding` gitlink, `businessToGo.xcodeproj/project.pbxproj:1334`, `businessToGo/businessToGoApp.swift`.
+- **Location:** `Modules/Boarding` gitlink, `businessToGoTime.xcodeproj/project.pbxproj:1334`, `businessToGoTime/businessToGoTimeApp.swift`.
 - **Cause:** Boarding is a mode-160000 entry at `0035f14fd8b0149bbe3272f032c7f6a032a4ad46`, but no `.gitmodules` mapping/source is available. Xcode cannot find `BoardingUI`. The checkout and isolated export both lack its source.
 - **Follow-up:** recover original source and correct package/submodule metadata. Preserve onboarding behavior; do not invent a replacement to satisfy imports. Then expose subsequent build blockers.
 - **Regression:** fresh-checkout dependency resolution and app/widget/test builds.
@@ -55,7 +55,7 @@ Evidence is based on `de9e71e`, reviewed 2026-10-25. App-owned paths below are r
 
 ### F7 — Legacy authentication and no credential verification
 - **Severity:** HIGH (latest-Kimai compatibility; misleading login). **Evidence:** confirmed app source and official documentation; no installed-server authentication probe.
-- **Location:** `Modules/Kimai/Sources/Services/KimaiService.swift:56–73` and `KimaiAuthPlugin.prepare`; `Modules/Login/Sources/UI/KimaiLoginView.swift`; `businessToGo/App/AppFeature.swift` login orchestration.
+- **Location:** `Modules/Kimai/Sources/Services/KimaiService.swift:56–73` and `KimaiAuthPlugin.prepare`; `Modules/Login/Sources/UI/KimaiLoginView.swift`; `businessToGoTime/App/AppFeature.swift` login orchestration.
 - **Cause:** the plugin sends `X-AUTH-USER` / `X-AUTH-TOKEN`. `login(server:)` constructs a URL, assigns global `KimaiAPI.server`, and returns true without validating credentials. UI labels the credential as Password. Errors saving accounts/authenticating are often ignored with `try?`.
 - **Official evidence:** [current API contract](https://www.kimai.org/documentation/rest-api.html) requires `Authorization: Bearer <API token>`. [Removal notice](https://www.kimai.org/en/blog/2026/removing-api-passwords) says API passwords were deprecated 2024-04-07 and removal was scheduled after Q2 2026, no later than July. [Latest release](https://github.com/kimai/kimai/releases/tag/2.70.2) at review time is 2.70.2. The notice alone does not prove which exact installed release rejects legacy headers.
 - **Follow-up:** separately approve Bearer-token storage/UI/header migration, server URL validation (including HTTPS and subdirectory paths), actual authentication validation, and user-visible error handling. Never send real credentials to a test fixture or assume inserting a token in the old Password field fixes the wire protocol.
@@ -63,7 +63,7 @@ Evidence is based on `de9e71e`, reviewed 2026-10-25. App-owned paths below are r
 
 ### F8 — Remote debug state contains account secrets when enabled
 - **Severity:** HIGH (conditional privacy risk). **Evidence:** confirmed serialization path; no remote logging was enabled or inspected over the network.
-- **Location:** `businessToGo/businessToGoApp.swift` monitor wiring; `AppFeature.State.login`; `AccountData.password`; Redux 1.2.14 `MonitorMiddleware.sendInit/sendAction`.
+- **Location:** `businessToGoTime/businessToGoTimeApp.swift` monitor wiring; `AppFeature.State.login`; `AccountData.password`; Redux 1.2.14 `MonitorMiddleware.sendInit/sendAction`.
 - **Cause:** monitor transmits whole Codable state/actions to its configured WebSocket endpoint when remote logging is enabled. Account records contain credential strings; `showAction` excludes only `.setState`, not secret fields in other actions/state. Debug UI exposes the toggle. Default is false, which limits exposure but does not redact enabled logging.
 - **Follow-up:** remove secrets from debug payloads and restrict production remote-debug capabilities. Audit Pulse request/header redaction separately; automatic URLSession capture is enabled, but actual persisted/redacted fields were not established here.
 - **Regression:** middleware/serialization tests assert credential values cannot reach captured outbound payloads; E2E test mode must disable remote logging.

@@ -11,7 +11,7 @@ import PulseLogHandler
 import CommonServices
 
 
-struct businessToGoApp: App {
+struct businessToGoTimeApp: App {
     let store: StoreOf<AppFeature>
     
     static func onAction(_ action: MonitorMiddleware<AppFeature.Action, AppFeature.State>.ActionType) -> AppFeature.Action {

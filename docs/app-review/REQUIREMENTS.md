@@ -1,4 +1,4 @@
-# BusinessToGo App Review — Requirements
+# businessToGo Time App Review — Requirements
 
 ## Goal
 Recover a trustworthy understanding of this two-year-old SwiftUI app, document its actual behavior and architecture, and establish unit tests, driver-based XCUITest end-to-end tests, and a small risk-focused integration suite before undertaking larger changes. This document plans the work; it does not constitute a completed audit or authorize a rewrite.
@@ -25,7 +25,7 @@ Recover a trustworthy understanding of this two-year-old SwiftUI app, document i
 - Confirmed scope: resume active development, starting with rediscovery, documentation, and testing. Widget development and Taiga project management are planned next; neither is to be removed or completed within this review.
 - Recommended CI, not yet selected: GitHub Actions with a pinned macOS runner image, explicit Xcode selection, an available latest-stable-iOS simulator, dependency caching keyed by resolved revisions, and `.xcresult` artifacts. Use the same commands locally; avoid silently changing tools via `macos-latest`. Reassess if the repository host or runner constraints favor another provider.
 - The initial source inspection found a SwiftUI app with app-level `Components`, local Swift packages under `Modules`, `Common`, and `Foundation`, and external Redux, Dependencies, OfflineSync, LoginService, Router, Moya, Chart, and logging dependencies. Build compatibility has not yet been verified.
-- Existing tests include ReduxTestStore examples and template tests; their effectiveness and runtime safety remain unverified. `businessToGo.xctestplan` currently lists the app test target, so package-test execution must be checked separately.
+- Existing tests include ReduxTestStore examples and template tests; their effectiveness and runtime safety remain unverified. `businessToGoTime.xctestplan` currently lists the app test target, so package-test execution must be checked separately.
 - README claims full Taiga integration and automatic offline sync. Source inspection found Taiga account/UI scaffolding and an empty Taiga project input in `IntegrationsView`; this is evidence to investigate, not proof of a complete feature inventory.
 - Early review targets include `KimaiService.login`, which currently accepts a constructed URL without validating credentials; mutable shared API server configuration; account/database isolation; ignored errors; and test dependency defaults. These are investigation leads, not a completed security assessment.
 - Package platform declarations include iOS 16, while Xcode build settings also contain iOS 17.5 entries. S1 must record current settings separately from the confirmed latest-stable-iOS policy; any deployment-target changes require an agreed implementation step.

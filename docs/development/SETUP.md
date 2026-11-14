@@ -27,18 +27,18 @@ xcrun simctl list devices available
 
 ## Resolve and build
 
-Run these in a fresh checkout. `../businessToGo-review-artifacts` must be a new scratch directory, not another project's storage.
+Run these in a fresh checkout. `../businessToGoTime-review-artifacts` must be a new scratch directory, not another project's storage.
 
 ```sh
-mkdir -p ../businessToGo-review-artifacts
+mkdir -p ../businessToGoTime-review-artifacts
 xcodebuild -resolvePackageDependencies \
-  -project businessToGo.xcodeproj -scheme businessToGo \
-  -clonedSourcePackagesDirPath ../businessToGo-review-artifacts/packages
+  -project businessToGoTime.xcodeproj -scheme businessToGoTime \
+  -clonedSourcePackagesDirPath ../businessToGoTime-review-artifacts/packages
 
-xcodebuild -project businessToGo.xcodeproj -scheme businessToGo \
+xcodebuild -project businessToGoTime.xcodeproj -scheme businessToGoTime \
   -configuration Debug -destination 'generic/platform=iOS Simulator' \
-  -derivedDataPath ../businessToGo-review-artifacts/DerivedData \
-  -clonedSourcePackagesDirPath ../businessToGo-review-artifacts/packages \
+  -derivedDataPath ../businessToGoTime-review-artifacts/DerivedData \
+  -clonedSourcePackagesDirPath ../businessToGoTime-review-artifacts/packages \
   -disableAutomaticPackageResolution CODE_SIGNING_ALLOWED=NO build
 ```
 
@@ -55,9 +55,9 @@ The script uses a separate derived-data cache per worktree and installs the opti
 For a widget-only compile check:
 
 ```sh
-xcodebuild -project businessToGo.xcodeproj -target widgetExtension \
+xcodebuild -project businessToGoTime.xcodeproj -target widgetExtension \
   -configuration Debug -sdk iphonesimulator \
-  -clonedSourcePackagesDirPath ../businessToGo-review-artifacts/packages \
+  -clonedSourcePackagesDirPath ../businessToGoTime-review-artifacts/packages \
   -disableAutomaticPackageResolution CODE_SIGNING_ALLOWED=NO build
 ```
 
@@ -65,7 +65,7 @@ This succeeded with Xcode 26.1.1; it does not verify real time-tracking integrat
 
 ## Running and testing
 
-Open [the Xcode project](../../businessToGo.xcodeproj), select the app scheme and a dedicated simulator, and Run **only after build recovery and test-mode isolation**. The app currently selects live/mock dependencies from persisted preferences, not a safe test launch contract. Remote logging must remain disabled.
+Open [the Xcode project](../../businessToGoTime.xcodeproj), select the app scheme and a dedicated simulator, and Run **only after build recovery and test-mode isolation**. The app currently selects live/mock dependencies from persisted preferences, not a safe test launch contract. Remote logging must remain disabled.
 
 [Test strategy and target inventory](../testing/TESTING.md) explain what exists and what is proposed. There is no working one-command unit/integration/E2E runner yet. The app's generic simulator build-for-testing succeeds after Boarding removal, but no tests were executed. The earlier `swift test --package-path Common` macOS host build failed; it is not a substitute for iOS simulator tests.
 

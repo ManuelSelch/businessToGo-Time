@@ -1,6 +1,6 @@
 suites:
   report-benchmark:
-    command: [xcodebuild, test, -project, businessToGo.xcodeproj, -scheme, businessToGo, -configuration, Debug, -destination, "platform=iOS Simulator,name=iPhone 17", -only-testing:businessToGoTests/ReportsPerformanceTests, -parallel-testing-enabled, NO, -enableCodeCoverage, NO, CODE_SIGNING_ALLOWED=NO, ENABLE_TESTABILITY=YES]
+    command: [xcodebuild, test, -project, businessToGoTime.xcodeproj, -scheme, businessToGoTime, -configuration, Debug, -destination, "platform=iOS Simulator,name=iPhone 17", -only-testing:businessToGoTimeTests/ReportsPerformanceTests, -parallel-testing-enabled, NO, -enableCodeCoverage, NO, CODE_SIGNING_ALLOWED=NO, ENABLE_TESTABILITY=YES]
     cwd: .
     timeoutSeconds: 1200
     auto: manual

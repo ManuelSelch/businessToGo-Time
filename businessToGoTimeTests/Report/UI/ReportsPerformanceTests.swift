@@ -2,7 +2,7 @@ import XCTest
 import SwiftUI
 import CommonCore
 import KimaiCore
-@testable import businessToGo
+@testable import businessToGoTime
 
 final class ReportsPerformanceTests: XCTestCase {
     private var report: ReportsView!

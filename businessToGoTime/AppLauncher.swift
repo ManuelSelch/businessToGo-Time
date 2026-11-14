@@ -4,7 +4,7 @@ import SwiftUI
 struct AppLauncher {
     static func main() throws {
         if NSClassFromString("XCTestCase") == nil {
-            businessToGoApp.main()
+            businessToGoTimeApp.main()
         } else {
             TestApp.main()
         }

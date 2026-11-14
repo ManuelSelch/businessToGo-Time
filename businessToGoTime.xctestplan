@@ -10,18 +10,18 @@
   ],
   "defaultOptions" : {
     "targetForVariableExpansion" : {
-      "containerPath" : "container:businessToGo.xcodeproj",
+      "containerPath" : "container:businessToGoTime.xcodeproj",
       "identifier" : "84C5A2912BC40EEC00C25A0C",
-      "name" : "businessToGo"
+      "name" : "businessToGoTime"
     }
   },
   "testTargets" : [
     {
       "parallelizable" : false,
       "target" : {
-        "containerPath" : "container:businessToGo.xcodeproj",
+        "containerPath" : "container:businessToGoTime.xcodeproj",
         "identifier" : "84C5A2A22BC40EEE00C25A0C",
-        "name" : "businessToGoTests"
+        "name" : "businessToGoTimeTests"
       }
     }
   ],

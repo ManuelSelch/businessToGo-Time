@@ -28,7 +28,7 @@ Arrows below mean imports/dependencies, not runtime invocation order. The map gr
 
 ```mermaid
 flowchart TD
-    Shell[AppLauncher / businessToGoApp / AppFeature]
+    Shell[AppLauncher / businessToGoTimeApp / AppFeature]
     Components[App-level Components and Containers]
     Router[Router 1.0.5]
     Redux[Redux / ReduxDebug 1.2.14]
@@ -68,8 +68,8 @@ flowchart TD
 
 | Owner | Responsibility / source |
 |---|---|
-| App shell | [AppLauncher](../../businessToGo/AppLauncher.swift) chooses production vs unit-test app. [businessToGoApp](../../businessToGo/businessToGoApp.swift) initializes capture, DI mode, root store and monitor. |
-| App orchestration | [AppFeature](../../businessToGo/App/AppFeature.swift) owns root state and dispatches child reducers; coordinates login/sync, logout/reset and global routing. |
+| App shell | [AppLauncher](../../businessToGoTime/AppLauncher.swift) chooses production vs unit-test app. [businessToGoTimeApp](../../businessToGoTime/businessToGoTimeApp.swift) initializes capture, DI mode, root store and monitor. |
+| App orchestration | [AppFeature](../../businessToGoTime/App/AppFeature.swift) owns root state and dispatches child reducers; coordinates login/sync, logout/reset and global routing. |
 | UI composition | [Components](../../Components) contains Login/Kimai/Today/Management/Report/Settings/Assistant projections and containers. Projection types derive state and lift UI actions; they are not independent data stores/services. |
 | Kimai | [Package](../../Modules/Kimai/Package.swift) exposes Core, UI, Services, App targets. Core is not fully infrastructure-free: models conform to OfflineSync protocols. Reducer performs orchestration and synchronous service calls. |
 | Login | [Package](../../Modules/Login/Package.swift) exposes Core/UI/Services/App; account records depend on external LoginService. Login reducer selects credentials and per-account database. |
@@ -82,7 +82,7 @@ The current structure is feature-oriented but not strict clean architecture: app
 
 ## State, lifetimes and effects
 
-- `businessToGoApp.store` owns `StoreOf<AppFeature>` for the app lifetime. Root state contains `login`, `kimai`, `integration`, `report`, `intro`, `debug`.
+- `businessToGoTimeApp.store` owns `StoreOf<AppFeature>` for the app lifetime. Root state contains `login`, `kimai`, `integration`, `report`, `intro`, `debug`.
 - Kimai state caches customer/project/activity/timesheet/team/user arrays, pending-change arrays, selected team and sync status. SQLite is persistent storage; state arrays are projections/snapshots, not a transactional mirror.
 - The Projects tab groups projects under customer rows. Customer and project actions use existing sheets and delete flows; project creation starts with the selected customer. Search retains all projects for matching customers and otherwise only matching projects, while the selected team still filters customers. The Today and Projects views share the folder-row presentation.
 - Report state owns selected date/project/period and month names. Filtering/aggregation also exists in `ReportsView`, `ReportViewModel` and model helpers.
@@ -98,7 +98,7 @@ The current structure is feature-oriented but not strict clean architecture: app
 ```mermaid
 sequenceDiagram
     participant Launch as AppLauncher
-    participant App as businessToGoApp
+    participant App as businessToGoTimeApp
     participant Root as AppContainer / router
     participant Login as LoginFeature
     participant Storage as Keychain and SQLite

@@ -10,14 +10,14 @@ The older Kimai reducer tests are not included: they exercise saves/deletes with
 
 ## Weekly report benchmark
 
-[ReportsPerformanceTests](../../businessToGoTests/Report/UI/ReportsPerformanceTests.swift) adds a focused calculation check and XCTest wall-clock benchmark for the current production report selection and `ReportsView.getReportChart(timesheets:)` path. It uses 10,000 synthetic, closed one-hour entries over 100 days: the selected Monday–Sunday week contains 700 entries and 100 hours per weekday. Fixture generation is outside the measured block; no storage, accounts or server are used.
+[ReportsPerformanceTests](../../businessToGoTimeTests/Report/UI/ReportsPerformanceTests.swift) adds a focused calculation check and XCTest wall-clock benchmark for the current production report selection and `ReportsView.getReportChart(timesheets:)` path. It uses 10,000 synthetic, closed one-hour entries over 100 days: the selected Monday–Sunday week contains 700 entries and 100 hours per weekday. Fixture generation is outside the measured block; no storage, accounts or server are used.
 
 Run the Pi `report-benchmark` suite, or:
 
 ```sh
-xcodebuild test -project businessToGo.xcodeproj -scheme businessToGo \
+xcodebuild test -project businessToGoTime.xcodeproj -scheme businessToGoTime \
   -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17' \
-  -only-testing:businessToGoTests/ReportsPerformanceTests \
+  -only-testing:businessToGoTimeTests/ReportsPerformanceTests \
   -parallel-testing-enabled NO -enableCodeCoverage NO \
   CODE_SIGNING_ALLOWED=NO ENABLE_TESTABILITY=YES
 ```
@@ -51,11 +51,11 @@ The Release pipeline was attempted with and without code coverage. Both builds f
 
 ## Existing tests and discovery
 
-- App target: `businessToGoTests/Management/Kimai/TestKimaiReducer.swift`, one `testTeamSelected` method that actually saves a customer. Test naming/assertion/action expectations need review.
+- App target: `businessToGoTimeTests/Management/Kimai/TestKimaiReducer.swift`, one `testTeamSelected` method that actually saves a customer. Test naming/assertion/action expectations need review.
 - Kimai package: three methods in `Tests/CoreTests/KimaiTests.swift`: team selection, save and delete. Save/delete invoke real service/database behavior under global mock defaults; they are not established pure reducer unit tests.
 - Common, NetworkFoundation, RequestFoundation, Intro and Login test files contain six `testExample` methods in total, with no meaningful behavior assertions found by source inspection. Login's folder/target named `UITests` is a package XCTest target importing LoginUI, **not** an XCUITest application runner.
 - Total discoverable source methods in the reviewed checkout: ten (four Kimai/app examples, six template methods). Runtime test discovery/count is unverified.
-- `businessToGo.xctestplan` names only the app test target. The shared scheme retains a skipped, absent `businessToGoUITests` native target. There is no active E2E suite or integration driver layer.
+- `businessToGoTime.xctestplan` names only the app test target. The shared scheme retains a skipped, absent `businessToGoTimeUITests` native target. There is no active E2E suite or integration driver layer.
 - The missing Boarding package was removed; validate every remaining package target rather than assuming the root scheme covers them.
 
 ## Reducer and UI projection allocation
@@ -64,7 +64,7 @@ All entries below are planned unless explicitly described above as existing exam
 
 | Owner / unit | Primary coverage and controlled collaborators |
 |---|---|
-| `businessToGo/App/AppFeature` | Unit: action delegation/lifting, login/offline selection, sync trigger, logout/reset state, popup/settings/intro routes. Fake Kimai facade, credential adapter and router. |
+| `businessToGoTime/App/AppFeature` | Unit: action delegation/lifting, login/offline selection, sync trigger, logout/reset state, popup/settings/intro routes. Fake Kimai facade, credential adapter and router. |
 | `Modules/Login/.../LoginFeature` | Unit: fetch/restore/create/save/delete, current-account selection, logout/reset, demo delegate, dependency failures. Spy database/credential closures; do not touch real Keychain. Identity allocation in LoginContainer needs a small testable rule seam before pure unit testing. |
 | `Modules/Kimai/.../KimaiFeature` | Unit: CRUD dispatch, visibility/delete guards/popups, local reload, change-state updates, sync stage order/status/success/failure. Fake per-entity services and bounded effect completion. Existing concrete dependencies require the proposed seam. |
 | `Components/Report/Domain/ReportFeature` | Unit: date/project/type selection, previous/next year, month navigation, calendar edge cases. Fixed calendar/clock inputs rather than ambient Date/Calendar. |
@@ -77,9 +77,9 @@ All entries below are planned unless explicitly described above as existing exam
 
 ## Middleware allocation
 
-There is **one configured middleware**: external `MonitorMiddleware.handle`, created by `businessToGoApp`; reducers currently own most effects.
+There is **one configured middleware**: external `MonitorMiddleware.handle`, created by `businessToGoTimeApp`; reducers currently own most effects.
 
-- App unit tests: reset/jump-to mapping in `businessToGoApp.onAction`, `.setState` exclusion in `showAction`, remote logging default-off and outbound secret-redaction contract after a separately approved fix.
+- App unit tests: reset/jump-to mapping in `businessToGoTimeApp.onAction`, `.setState` exclusion in `showAction`, remote logging default-off and outbound secret-redaction contract after a separately approved fix.
 - Pinned Redux middleware contract: updated-state/action observation, emissions back to store, disabled logging produces no outbound requests, bounded subscription settlement. Real remote sockets are forbidden in ordinary suites.
 - A fake monitor/socket boundary is needed to test enabled transmission safely; the library currently constructs its own private client. Do not enable production middleware just to obtain test coverage. An external injection seam/fix needs its own approved change if enabled-path tests require it.
 - No other middleware was found in app registration; do not create artificial middleware layers to satisfy the test plan.

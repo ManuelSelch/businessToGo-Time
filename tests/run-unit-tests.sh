@@ -17,3 +17,4 @@ swiftc Components/Report/Domain/ReportTimelineLayout.swift tests/report/timeline
 "$build_dir/timeline-layout"
 
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/ui -p '*test.py'
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests/project -p '*test.py'

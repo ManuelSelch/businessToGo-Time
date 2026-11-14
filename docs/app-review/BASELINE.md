@@ -20,8 +20,8 @@
 | App / test minimum deployment | iOS 16.0 in project configuration; app also confirmed with `-showBuildSettings` |
 | Widget minimum deployment | iOS 17.5 in project configuration |
 | Swift language build setting | 5.0; distinct from compiler version |
-| Shared scheme | `businessToGo` |
-| Native targets | `businessToGo`, `businessToGoTests`, `widgetExtension` |
+| Shared scheme | `businessToGoTime` |
+| Native targets | `businessToGoTime`, `businessToGoTimeTests`, `widgetExtension` |
 | Signing | Automatic; checked-in team setting. Simulator probes used `CODE_SIGNING_ALLOWED=NO`; device signing not attempted |
 | Host | arm64 macOS; `swift --version` reports target arm64-apple-macosx26.0 |
 
@@ -38,20 +38,20 @@ xcodebuild -showsdks
 xcrun simctl list devices available
 
 xcodebuild -resolvePackageDependencies \
-  -project businessToGo.xcodeproj -scheme businessToGo \
+  -project businessToGoTime.xcodeproj -scheme businessToGoTime \
   -clonedSourcePackagesDirPath ../packages
 
-xcodebuild -project businessToGo.xcodeproj -scheme businessToGo \
+xcodebuild -project businessToGoTime.xcodeproj -scheme businessToGoTime \
   -configuration Debug -destination 'generic/platform=iOS Simulator' \
   -derivedDataPath ../DerivedData -clonedSourcePackagesDirPath ../packages \
   -disableAutomaticPackageResolution CODE_SIGNING_ALLOWED=NO build
 
-xcodebuild -project businessToGo.xcodeproj -scheme businessToGo \
+xcodebuild -project businessToGoTime.xcodeproj -scheme businessToGoTime \
   -destination 'platform=iOS Simulator,id=92F281CD-87DD-49AE-80A5-9C1311E31A7F' \
   -derivedDataPath ../DerivedData -clonedSourcePackagesDirPath ../packages \
   -disableAutomaticPackageResolution CODE_SIGNING_ALLOWED=NO build-for-testing
 
-xcodebuild -project businessToGo.xcodeproj -target widgetExtension \
+xcodebuild -project businessToGoTime.xcodeproj -target widgetExtension \
   -configuration Debug -sdk iphonesimulator \
   -clonedSourcePackagesDirPath ../packages -disableAutomaticPackageResolution \
   CODE_SIGNING_ALLOWED=NO build
@@ -75,13 +75,13 @@ The Common probe tests host-macOS package buildability, **not** iOS behavior. It
 ## Checkout and package issues
 
 1. `git ls-files --stage` records `Modules/Boarding` as mode `160000`, commit `0035f14fd8b0149bbe3272f032c7f6a032a4ad46`. There is no tracked `.gitmodules`, its directory is empty, and `git submodule status` fails: `no submodule mapping found in .gitmodules for path 'Modules/Boarding'`. Recover the intended source/repository; do not fabricate onboarding APIs or silently delete the feature.
-2. The shared scheme also retains a skipped reference to `businessToGoUITests`, but that native target is absent from the project. The active test plan names only `businessToGoTests`; package tests are not an established part of its execution.
+2. The shared scheme also retains a skipped reference to `businessToGoTimeUITests`, but that native target is absent from the project. The active test plan names only `businessToGoTimeTests`; package tests are not an established part of its execution.
 3. Integration's service source uses obsolete `DatabaseTable`/`OfflineSync` module names and is outside the manifest's declared target source paths. RequestFoundation similarly contains undeclared external imports and no external package dependencies. These are source/manifest findings, not diagnostics reached by the app build.
 4. Package revision ranges are not upgrade instructions. Preserve the workspace lockfile while recovering buildability; standalone package lockfiles may resolve differently.
 
 ## Pinned remote dependencies
 
-Source of truth: [workspace Package.resolved](../../businessToGo.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved). This table records the resolved baseline, not an upgrade or vulnerability audit.
+Source of truth: [workspace Package.resolved](../../businessToGoTime.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved). This table records the resolved baseline, not an upgrade or vulnerability audit.
 
 | Package | Version | Revision prefix |
 |---|---|---|
