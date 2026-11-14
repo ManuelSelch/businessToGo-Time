@@ -98,9 +98,7 @@ public class KimaiService {
         return coordinator.operation { check in
             guard configured else { throw ServiceError.accountChanged }
             try await coordinator.synchronizeReferenceData(customers: customers, projects: projects,
-                activities: activities, users: users, check: check)
-            try check()
-            _ = try await timesheets.sync()
+                activities: activities, users: users, timesheets: timesheets, check: check)
         }
     }
 

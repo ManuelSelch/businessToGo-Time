@@ -365,6 +365,18 @@ final class SyncRegressionDriver {
 
     func synchronizeIncrementalTimesheets() async throws { _ = try await incremental!.sync() }
 
+    func discardFetchedTimesheetSnapshot() async throws {
+        let session = try SyncSession(connection: incremental!.repository.connection())
+        let state = try incremental!.prepareFetch(session: session)
+        _ = try await incremental!.fetchSnapshot(state: state, session: session)
+    }
+
+    func shouldHaveNoTimesheetCheckpoint(file: StaticString = #filePath, line: UInt = #line) throws {
+        let count = try connections[account]!.scalar("SELECT COUNT(*) FROM kimai_sync_checkpoint") as? Int64
+        XCTAssertEqual(count, 0, file: file, line: line)
+        XCTAssertTrue(try incremental!.get().isEmpty, file: file, line: line)
+    }
+
     func repeatIncrementalSync(_ count: Int) async throws {
         for _ in 0..<count { try await synchronizeIncrementalTimesheets() }
     }
@@ -472,13 +484,16 @@ final class SyncRegressionDriver {
         _ = try await timesheetService!.sync()
     }
 
-    private enum ReferenceOutcome { case success, failure, accountSwitch, cancel, edit }
+    private enum ReferenceOutcome { case success, failure, timesheetFailure, accountSwitch, cancel, edit }
 
     func synchronizeReferenceCollections(file: StaticString = #filePath, line: UInt = #line) async throws {
         try await exerciseReferenceFetch(.success, file: file, line: line)
     }
     func rejectReferenceFetch(file: StaticString = #filePath, line: UInt = #line) async throws {
         try await exerciseReferenceFetch(.failure, file: file, line: line)
+    }
+    func rejectTimesheetFetch(file: StaticString = #filePath, line: UInt = #line) async throws {
+        try await exerciseReferenceFetch(.timesheetFailure, file: file, line: line)
     }
     func switchAccountDuringReferenceFetch(file: StaticString = #filePath, line: UInt = #line) async throws {
         try await exerciseReferenceFetch(.accountSwitch, file: file, line: line)
@@ -496,8 +511,8 @@ final class SyncRegressionDriver {
         let userService = RecordService(repository: DatabaseRepository<KimaiUser>("kimai_users"), requestService: users)
         let coordinator = KimaiSyncCoordinator()
         let gate = ReferenceFetchGate()
-        let started = XCTestExpectation(description: "all four reference requests in flight")
-        started.expectedFulfillmentCount = 4
+        let started = XCTestExpectation(description: "all five resource requests in flight")
+        started.expectedFulfillmentCount = 5
         let finished = XCTestExpectation(description: "reference operation completed")
         customerRemote!.onFetch = { try await gate.wait("customers", started: started) }
         projectRemote!.onFetch = { try await gate.wait("projects", started: started) }
@@ -506,13 +521,11 @@ final class SyncRegressionDriver {
         customerRemote!.onInsert = { [referenceUploads] in referenceUploads.record("customers") }
         projectRemote!.onInsert = { [referenceUploads] in referenceUploads.record("projects") }
         activityRemote!.onInsert = { [referenceUploads] in referenceUploads.record("activities") }
-        timesheetRemote!.onFetch = { [referenceUploads] in referenceUploads.record("timesheets-fetch") }
+        timesheetRemote!.onFetch = { try await gate.wait("timesheets", started: started) }
         timesheetRemote!.onInsert = { [referenceUploads] in referenceUploads.record("timesheets") }
         let operation = coordinator.operation { [self] check in
             try await coordinator.synchronizeReferenceData(customers: customerService!, projects: projectService!,
-                activities: activityService!, users: userService, check: check)
-            try check()
-            _ = try await timesheetService!.sync()
+                activities: activityService!, users: userService, timesheets: timesheetService!, check: check)
         }
         let task = _Concurrency.Task {
             defer { finished.fulfill() }
@@ -520,7 +533,7 @@ final class SyncRegressionDriver {
         }
         await testCase!.fulfillment(of: [started], timeout: 2)
         let maximum = await gate.maximum
-        XCTAssertEqual(maximum, 4, file: file, line: line)
+        XCTAssertEqual(maximum, 5, file: file, line: line)
         XCTAssertTrue(referenceUploads.names.isEmpty, "No uploads before all snapshots arrive", file: file, line: line)
         switch outcome {
         case .success: break
@@ -529,10 +542,11 @@ final class SyncRegressionDriver {
             project.name = "edited during download"
             try projectService!.update(project)
         case .failure: await gate.fail("projects")
+        case .timesheetFailure: await gate.fail("timesheets")
         case .accountSwitch: switchAccount(to: "b")
         case .cancel: coordinator.invalidate()
         }
-        if outcome == .failure || outcome == .cancel {
+        if outcome == .failure || outcome == .timesheetFailure || outcome == .cancel {
             await testCase!.fulfillment(of: [finished], timeout: 2)
         }
         await gate.release()
@@ -541,8 +555,9 @@ final class SyncRegressionDriver {
         else {
             if case .success = result { XCTFail("Expected rejected reference sync", file: file, line: line) }
             let cancelled = await gate.cancelled
-            if outcome == .failure { XCTAssertEqual(cancelled, ["customers", "activities", "users"], file: file, line: line) }
-            if outcome == .cancel { XCTAssertEqual(cancelled.count, 4, file: file, line: line) }
+            if outcome == .failure { XCTAssertEqual(cancelled, ["customers", "activities", "users", "timesheets"], file: file, line: line) }
+            if outcome == .timesheetFailure { XCTAssertEqual(cancelled, ["customers", "projects", "activities", "users"], file: file, line: line) }
+            if outcome == .cancel { XCTAssertEqual(cancelled.count, 5, file: file, line: line) }
             if outcome == .accountSwitch {
                 XCTAssertEqual(try DatabaseRepository<KimaiProject>("kimai_projects").get().count, 0, file: file, line: line)
                 switchAccount(to: "a")
@@ -556,7 +571,7 @@ final class SyncRegressionDriver {
     }
 
     func shouldHaveOrderedReferenceUploads(file: StaticString = #filePath, line: UInt = #line) {
-        XCTAssertEqual(referenceUploads.names, ["customers", "projects", "activities", "timesheets-fetch", "timesheets"], file: file, line: line)
+        XCTAssertEqual(referenceUploads.names, ["customers", "projects", "activities", "timesheets"], file: file, line: line)
     }
 
     func shouldHaveUnchangedReferenceChanges(file: StaticString = #filePath, line: UInt = #line) {

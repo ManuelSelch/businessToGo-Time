@@ -141,7 +141,7 @@ sequenceDiagram
     A->>R: kimai.sync
     R->>S: Read local records/change queues
     S->>DB: Query repositories
-    R->>S: Fetch reference collections concurrently, reconcile in order, then sync timesheets
+    R->>S: Fetch all collections concurrently, reconcile and upload in dependency order
     S->>API: Fetch / upload pending changes
     S->>DB: Merge records and acknowledge changes
     alt Thrown sync error

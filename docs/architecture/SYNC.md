@@ -33,7 +33,7 @@
 - Timesheet pages request `size=500`, ordered by ID ascending, with at most four subsequent pages in flight. Results are assembled in page order and validated before merging.
 - The first two successful scans establish a conservative UTC `modified_after` checkpoint. It advances only after successful local reconciliation, using the **previous** scan's HTTP Date minus one second; device-clock time is never used.
 - Checkpoints survive reopening. Failure leaves them unchanged; server-clock rollback forces a full refresh. Missing HTTP Date disables checkpoint advancement. Every twentieth post-initialization scan refreshes full history to limit drift from proxy clock skew and non-cursor pagination.
-- Customers (including teams), projects, activities and users refresh fully in parallel under one lease. All snapshots must arrive before reconciliation; a failed fetch cancels its siblings without starting uploads. Reconciliation and uploads remain ordered by dependency, followed by timesheets. No real-server latency improvement is claimed from fixture timings.
+- Customers (including teams), projects, activities, users and timesheets fetch in parallel under one lease. Reference collections refresh fully; timesheets use the checkpoint described above. All snapshots must arrive before reconciliation; a failed fetch cancels its siblings without starting uploads. Reconciliation and uploads remain ordered by dependency, with timesheets last; their checkpoint advances only after successful reconciliation. No real-server latency improvement is claimed from fixture timings.
 
 ## API assumptions and limits
 

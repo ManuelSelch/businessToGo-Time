@@ -33,6 +33,20 @@ final class SyncRegressionTests: XCTestCase {
         sync.shouldHaveUnchangedReferenceChanges()
     }
 
+    func testDiscardedTimesheetSnapshotDoesNotAdvanceCheckpointOrMerge() async throws {
+        sync.useIncrementalTimesheetRemote()
+
+        try await sync.discardFetchedTimesheetSnapshot()
+
+        try sync.shouldHaveNoTimesheetCheckpoint()
+    }
+
+    func testFailedTimesheetFetchCancelsReferencesWithoutAcknowledgingChanges() async throws {
+        try await sync.rejectTimesheetFetch()
+
+        sync.shouldHaveUnchangedReferenceChanges()
+    }
+
     func testAccountSwitchDuringReferenceFetchCannotApplySnapshots() async throws {
         try await sync.switchAccountDuringReferenceFetch()
 
