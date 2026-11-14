@@ -1,4 +1,5 @@
 public struct KimaiActivity: KimaiTableProtocol, Hashable {
+    public static var foreignKeys: [String: String] { ["project": "kimai_projects"] }
     public var id: Int
     public var project: Int?
     public var name: String

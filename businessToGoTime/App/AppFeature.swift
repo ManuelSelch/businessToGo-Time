@@ -47,9 +47,12 @@ struct AppFeature: Reducer {
     func reduce(_ state: inout State, _ action: Action) -> Effect<Action> {
         switch action {
         case .sync:
-            if let account = state.login.accounts.first(where: {$0.identifier == state.login.accountId}) {
-                return loginKimai(account, &state)
+            guard let account = state.login.accounts.first(where: { $0.identifier == state.login.accountId }), account.kimai != nil else {
+                KimaiFeature().fetchOffline(&state.kimai)
+                return .none
             }
+            guard state.kimai.syncID == nil else { return .none }
+            return loginKimai(account, &state, resetState: false)
         
         case .settingsTapped:
             router.showSheet(
@@ -69,10 +72,25 @@ struct AppFeature: Reducer {
         case let .user(action):
             switch(action) {
             case .reset, .logout, .resetDatabases:
+                kimai.invalidateSync()
                 state.kimai = .init()
                 state.integration = .init()
                 router.dismiss()
                 router.showRoot(.login(.accounts))
+            case .login, .loginDemoAccount, .fetchAccounts:
+                kimai.invalidateSync()
+                state.kimai = .init()
+            case let .save(account):
+                if account.identifier == state.login.accountId {
+                    kimai.invalidateSync()
+                    state.kimai.syncID = nil
+                    state.kimai.syncStatus = .idle
+                }
+            case let .delete(id):
+                if id == state.login.accountId {
+                    kimai.invalidateSync()
+                    state.kimai = .init()
+                }
             default: break
             }
             return LoginFeature().lift(&state.login, action, toParent: Action.user)
@@ -115,7 +133,9 @@ struct AppFeature: Reducer {
     }
     
     
-    func loginKimai(_ account: Account, _ state: inout State) -> Effect<Action> {
+    func loginKimai(_ account: Account, _ state: inout State, resetState: Bool = true) -> Effect<Action> {
+        self.kimai.invalidateSync()
+        if resetState { state.kimai = .init() }
         guard let kimai = account.kimai else {
             KimaiFeature().fetchOffline(&state.kimai)
             return .none
@@ -124,12 +144,12 @@ struct AppFeature: Reducer {
         self.kimai.setAuth(username: kimai.username, password: kimai.password)
         try? keychain.saveAccount(account)
         
-        return .run { send in
-            if let success = try? await self.kimai.login(server: kimai.server) {
-                if(success){
-                    send(.success(.kimai(.sync)))
-                }
-            }
+        do {
+            _ = try self.kimai.login(server: kimai.server)
+            return .send(.kimai(.sync))
+        } catch {
+            state.kimai.syncStatus = .failed
+            return .none
         }
     }
     

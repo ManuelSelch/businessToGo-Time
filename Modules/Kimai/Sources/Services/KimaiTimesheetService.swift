@@ -1,28 +1,24 @@
 import Dependencies
 import Moya
 import OfflineSyncServices
-
 import KimaiCore
 
 struct KimaiTimesheetService {
-    static var live: RecordService<KimaiTimesheet> = .init(
-        repository: .init("kimai_timesheets"),
-        requestService: PageRequestService.live(
-            fetchMethod:  KimaiAPI.getTimesheets,
+    static var live: RecordService<KimaiTimesheet> {
+        TimesheetSyncService(repository: .init("kimai_timesheets"), pages: .live(
+            fetchMethod: { KimaiAPI.getTimesheets($0) },
             insertMethod: KimaiAPI.insertTimesheet,
             updateMethod: KimaiAPI.updateTimesheet,
             deleteMethod: KimaiAPI.deleteTimesheet
-        )
-        // keyMapping: KeyMappingTable.shared
-    )
-    static var mock: RecordService<KimaiTimesheet> = .init(
-        repository: .init("kimai_timesheets"),
-        requestService: PageRequestService.mock(
-            fetchMethod:  KimaiAPI.getTimesheets,
+        ))
+    }
+
+    static var mock: RecordService<KimaiTimesheet> {
+        TimesheetSyncService(repository: .init("kimai_timesheets"), pages: .mock(
+            fetchMethod: { KimaiAPI.getTimesheets($0) },
             insertMethod: KimaiAPI.insertTimesheet,
             updateMethod: KimaiAPI.updateTimesheet,
             deleteMethod: KimaiAPI.deleteTimesheet
-        )
-        // keyMapping: KeyMappingTable.shared
-    )
+        ))
+    }
 }

@@ -2,6 +2,7 @@ import Foundation
 import OfflineSyncCore
 
 public struct KimaiTimesheet: TableProtocol, Hashable {
+    public static var foreignKeys: [String: String] { ["project": "kimai_projects", "activity": "kimai_activities"] }
     public var id: Int
     
     public var activity: Int

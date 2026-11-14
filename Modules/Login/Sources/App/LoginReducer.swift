@@ -8,10 +8,10 @@ public extension LoginFeature {
     func reduce(_ state: inout State, _ action: Action) -> Effect<Action> {
         switch(action){
         case .resetDatabases:
-            database.deleteAllDBs()
+            database.deleteAllDBs(state.accounts.map { "businessToGo_\($0.identifier).sqlite" })
             
         case .reset:
-            database.deleteAllDBs()
+            database.deleteAllDBs(state.accounts.map { "businessToGo_\($0.identifier).sqlite" })
             try? keychain.removeAccounts()
             state.accounts = []
         

@@ -1,6 +1,7 @@
 import Foundation
 
 public struct KimaiProject: KimaiTableProtocol, Hashable {
+    public static var foreignKeys: [String: String] { ["customer": "kimai_customers"] }
     public var id: Int
     public var customer: Int
     public var name: String

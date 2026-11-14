@@ -40,29 +40,28 @@ public struct KimaiCustomerService {
             remoteInsert: { try await requestService.insert( KimaiCustomerDTO(from: $0) ).toModel() },
             remoteUpdate: { try await requestService.update( KimaiCustomerDTO(from: $0) ).toModel() },
             remoteDelete: nil
-            // keyMapping: KeyMappingTable.shared
         )
     }
     
-    public func getCustomers() -> [KimaiCustomer] {
-        return customerRepository.get()
+    public func getCustomers() throws -> [KimaiCustomer] {
+        return try customerRepository.get()
     }
-    public func getTeams() -> [KimaiTeam] {
-        return teamRepository.get()
-    }
-    
-    public func createCustomer(_ model: KimaiCustomer) {
-        var model = model
-        model.id = customerRepository.getLastId() + 1
-        customerRepository.insert(model, isTrack: true)
+    public func getCustomer(_ id: Int) throws -> KimaiCustomer? { try customerRepository.get(by: id) }
+
+    public func getTeams() throws -> [KimaiTeam] {
+        return try teamRepository.get()
     }
     
-    public func updateCustomer(_ model: KimaiCustomer) {
-        customerRepository.update(model, isTrack: true)
+    public func createCustomer(_ model: KimaiCustomer) throws {
+        try customerRepository.create(model)
     }
     
-    public func deleteCustomer(_ id: Int) {
-        customerRepository.delete(id, isTrack: true)
+    public func updateCustomer(_ model: KimaiCustomer) throws {
+        try customerRepository.update(model, isTrack: true)
+    }
+    
+    public func deleteCustomer(_ id: Int) throws {
+        try customerRepository.delete(id, isTrack: true)
     }
     
     public func fetch() async throws -> ([KimaiCustomer], [KimaiTeam]) {
@@ -75,16 +74,17 @@ public struct KimaiCustomerService {
     }
     
     public func sync() async throws -> ([KimaiCustomer], [KimaiTeam]) {
-        let localCustomers = customerRepository.get()
-        
+        let session = try SyncSession(connection: customerRepository.connection())
         let (remoteCustomers, remoteTeams) = try await fetch()
-        
-        let syncedCustomers = try await customerSyncService.sync(localRecords: localCustomers, remoteRecords: remoteCustomers)
+        try session.check()
+        let syncedCustomers = try await customerSyncService.sync(remoteRecords: remoteCustomers, session: session)
+        try session.check()
+        try teamRepository.replaceSnapshot(remoteTeams, on: session.connection)
         return (syncedCustomers, remoteTeams)
     }
     
-    public func getCustomerChanges() -> [DatabaseChange] {
-        return customerRepository.getChanges()
+    public func getCustomerChanges() throws -> [DatabaseChange] {
+        return try customerRepository.getChanges()
     }
     
     public func setPlugins(_ plugins: [PluginType]) {

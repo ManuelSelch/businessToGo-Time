@@ -6,6 +6,12 @@ The app has useful feature/package separation and local change tracking, but is 
 
 Evidence is based on `de9e71e`, reviewed 2026-10-25. App-owned paths below are relative to the repository root. External evidence was inspected at the exact workspace-pinned revisions, not at today's default branches. Severity describes impact if the path is exercised, not proof that a user's data has been damaged.
 
+## Current sync update
+
+- The local OfflineSync implementation now fixes F2–F4 and the sync-specific portions of F12/F13/F15; see [current sync architecture](../architecture/SYNC.md) and [verified regressions](../testing/SYNC-REGRESSIONS.md).
+- Database deletion/reset is now filename-scoped (the database portion of F5). The separate Keychain remove-all issue, account ID allocation, legacy authentication, secret logging and other non-sync findings are not claimed fixed here.
+- The findings below remain the historical source review of the pinned dependency, not a description of the updated local sync engine.
+
 ## High-priority findings
 
 ### F1 — Fresh-checkout app build was blocked

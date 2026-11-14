@@ -78,7 +78,7 @@ flowchart TD
 | Common / Foundation | Common contains formatting, date helpers, preferences and shared UI resources. CommonUI owns the adaptive teal/mint action color, contrasting action foreground, and compact icon-button dimensions; the app applies the action tint globally. NetworkFoundation supplies a Moya decoding helper. RequestFoundation is legacy/unwired in the inspected app graph with undeclared dependencies. |
 | External libraries | Redux/DI supply store/effect/global dependency behavior; OfflineSync owns repository/change tracking/sync; LoginService owns Keychain/current-account adapters. |
 
-OfflineSync is temporarily resolved from the local checkout specified in [developer setup](../development/SETUP.md#local-offlinesync-iteration), not the former 1.3.9 pin. [Isolated sync regression tests](../testing/SYNC-REGRESSIONS.md) reproduce data-integrity failures; switching the dependency source does not fix them.
+OfflineSync is temporarily resolved from the local checkout specified in [developer setup](../development/SETUP.md#local-offlinesync-iteration), not the former 1.3.9 pin. The local implementation now includes the transactional/revision-aware fixes described in [sync architecture](SYNC.md), verified by [isolated regression tests](../testing/SYNC-REGRESSIONS.md).
 
 The current structure is feature-oriented but not strict clean architecture: app reducers call concrete services, UI contains calculations, CommonCore contains a SwiftUI JSON viewer, and external persistence concerns appear in core models. These are observations, not authorization for a big-bang rewrite.
 
@@ -91,7 +91,7 @@ The current structure is feature-oriented but not strict clean architecture: app
 - Redux 1.2.14 `Store.send` reduces synchronously, subscribes to the returned Combine effect, then invokes configured middlewares with updated state/action. Emitted actions re-enter `send` on the main queue. `Effect<Action>` is `AnyPublisher<Action, Error>`; `.run` creates a Task inside a Future.
 - The only configured middleware is `MonitorMiddleware.handle`. Side effects in Login/Kimai reducers are not separate middleware implementations.
 - Dependencies 1.0.0 is a custom global registry, not swift-dependencies' task-local context: `.mode` chooses mutable static live/mock values; property wrappers resolve on access. Many mock/live service values are long-lived static objects. A test store sets global mode to mock but does not provide per-test isolation automatically.
-- Router's mock value aliases its live object. Kimai server URL and credential-bearing service instances are mutable shared state. No verified cancellation/generation guard prevents an old sync result from arriving after account selection changes.
+- Router's mock value aliases its live object. Kimai's coordinator invalidates old tasks on account/configuration changes; immutable per-session request origins/credentials and reducer completion IDs prevent old work from following the current account. See [sync lifetime](SYNC.md#account-lifetime).
 
 ## Runtime flows
 
@@ -151,9 +151,9 @@ sequenceDiagram
     end
 ```
 
-- Customer fetch returns customer DTOs and unique teams. Generic record fetch converts failures to empty arrays: the failure branch above is **not** reached for every network failure.
+- Customer fetch returns customer DTOs and unique teams, which are persisted for offline use. Generic fetch propagates errors; status/decoding/pagination failures cannot become authoritative empty data.
 - If no Kimai configuration exists, `loginKimai` reads offline state without remote authentication.
-- Logout/reset clears Kimai/integration state and routes to accounts; it does not explicitly cancel all outstanding async work.
+- Logout/reset invalidates the sync generation/task, clears Kimai/integration state and routes to accounts. Reset deletes only the known account database filenames.
 
 ### Local edit and delete
 
@@ -181,23 +181,23 @@ Local saves do not themselves guarantee immediate sync. Delete guards/popups are
 | Keychain | LoginService serializes whole `Account` (identifier/name, Kimai/Taiga server/username/password). App adapter uses service string `de.selch`. Remove-all is not service-scoped; see F5. |
 | UserDefaults | `currentAccount` string from LoginService; Common wrapper stores Codable Data for `isIntro` (default true), `isMock` and `isRemoteLog` (default false). Most writes use the standard suite, not a test namespace. |
 | SQLite file | OfflineSync opens app Documents / `businessToGo_<identifier>.sqlite` when LoginFeature selects an account. Initial live database has no filename/connection. |
-| Model tables | `kimai_customers`, `kimai_teams`, `kimai_projects`, `kimai_activities`, `kimai_timesheets`, `kimai_users`. Repositories generate columns using reflection over `Model()`; `id` is primary key, primitive optionals map to nullable columns, other fields default to string columns. Array encoding/decoding relies on SQLite.swift's Codable support; round-trip behavior is unverified. |
-| Change tracking | `track` table: id, type, recordID, tableName, timestamp. Local update after insert keeps insert tracking; deleting an unsynced insert clears its tracking. Errors are frequently swallowed. |
+| Model tables | `kimai_customers`, `kimai_teams`, `kimai_projects`, `kimai_activities`, `kimai_timesheets`, `kimai_users`. Repositories generate columns using reflection over `Model()`; `id` is primary key, primitive optionals map to nullable columns, other fields default to string columns. Array encoding/decoding uses SQLite.swift's Codable support; customer/team IDs and timesheet relationship round trips are exercised by the sync integration suite. |
+| Change tracking | `track` keeps the same columns, with a fresh timestamp/UUID revision on each mutation. Record+queue+baseline changes are transactional; successful acknowledgements clear only the revision uploaded. `sync_uploads` journals POST intents/receipts. Errors throw. |
 | Relationships | Project.customer → customer; Activity.project → project; Timesheet.project/activity → project/activity. Customer teams store team IDs, separate from fetched team DTOs. |
-| Mapping | A KeyMappingTable type and app relationships exist, but active sync wiring is commented out. It is not a working foreign-key migration mechanism. |
+| Mapping | Model foreign-key declarations register `sync_relationships`; server ID acknowledgements atomically update child rows and `sync_id_mapping`. Stale local identities are resolved on subsequent edits/deletes/creates. |
 | Schema evolution | No versioned app schema migration policy established. `CREATE IF NOT EXISTS` plus reflection is not a migration strategy; do not promise old data compatibility. |
 
 ### Observed conflict/retry semantics, not guarantees
 
-OfflineSync captures local records and tracked changes, deletes local non-inserts absent in the remote snapshot, uploads tracked changes, merges remote records where no local change blocks them, then acknowledges uploads. This resembles local-write precedence for pending changes and remote refresh for clean records, but lacks a verified conflict/version protocol. ID collisions, missing remapping, missing remote delete methods, swallowed fetch failures and non-durable per-upload acknowledgements make safe conflict resolution/retry **unproven**. See F2–F4.
+Current sync never infers deletion from snapshot absence. It retains pending edits, compares saved baselines to observed server records, acknowledges each successful upload independently, and preserves newer revisions. Ambiguous POSTs stop until a matching server record is independently confirmed. See [sync safety, checkpoints and server-contract limits](SYNC.md); the old F2–F4 findings describe the former 1.3.9 implementation.
 
 ## HTTP boundary
 
 - [KimaiAPI](../../Modules/Kimai/Sources/Services/KimaiAPI.swift) maps customer/project/activity/timesheet CRUD plus teams/users/me. The actual sync path derives teams from customers; enum cases alone do not establish use.
-- GET `/timesheets?page=<n>&user=all` is paginated through `PageRequestService`, reading `X-Total-Pages` from first response. Other collections use generic fetches.
+- Timesheets use validated pagination (`size=500`, stable ascending ID order, bounded concurrency), persistent UTC `modified_after` checkpoints and periodic full refresh. Pending delta writes re-fetch individual records. Other collections still refresh fully.
 - Generic writes use JSON; timesheet begin/end/description come directly from model strings/optionals. Customer writes hardcode DE/EUR/Europe-Berlin defaults. Optional serialization and latest endpoint permissions need contract tests.
-- `KimaiAuthPlugin` adds legacy headers from mutable service credentials. Server is globally mutable, initialized to a personal endpoint in source; tests must override/restrict it before any requests.
-- Response decoding uses JSONDecoder; status validation is not configured via Moya's `validationType`. HTTP status, nulls, pagination header representation, cancellation and empty responses need explicit tests.
+- `KimaiAuthPlugin` still adds legacy X-AUTH headers, but captures immutable account credentials and origin/path prefix. Unconfigured targets use `.invalid`; account database bindings reject switching to another server/user.
+- RequestService validates HTTP status before JSONDecoder and bridges task cancellation to the Moya request/continuation. Controlled tests cover decodable HTTP errors, cancellation, empty collections and pagination failures; no real-server compatibility result is claimed.
 - Latest Kimai's documented Bearer auth and distinct write/read timestamp formats differ from current behavior. This document does not describe an already-completed migration.
 
 ## Historical artifacts and future work

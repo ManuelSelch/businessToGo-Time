@@ -11,7 +11,7 @@ The older Kimai reducer tests are not included: they exercise saves/deletes with
 ## Sync regression suite
 
 - Run the manual Pi `sync-regression` suite. See [isolation, coverage and current failures](SYNC-REGRESSIONS.md).
-- These integration tests use the local OfflineSync package, temporary SQLite files and controlled HTTP; they intentionally assert safe behavior that currently fails. They are not part of the passing `unit` suite.
+- These passing integration tests use the fixed local OfflineSync package, temporary SQLite files and controlled HTTP. They are separate from `unit`; OfflineSync-owned tests are run manually with Bash, not added to the app pipeline.
 
 ## Weekly report benchmark
 

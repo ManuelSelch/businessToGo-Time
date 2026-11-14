@@ -16,7 +16,8 @@ public enum KimaiAPI {
     case insertActivity(KimaiActivity)
     case updateActivity(KimaiActivity)
     
-    case getTimesheets(_ page: Int)
+    case getTimesheets(_ page: Int, modifiedAfter: String? = nil)
+    case getTimesheet(Int)
     case insertTimesheet(KimaiTimesheet)
     case updateTimesheet(KimaiTimesheet)
     case deleteTimesheet(Int)
@@ -30,9 +31,9 @@ public enum KimaiAPI {
 extension KimaiAPI: Moya.TargetType {
     public var task: Moya.Task {
         switch self {
-        case .getCustomers, .getProjects, .getActivities, .deleteTimesheet(_), .getTeams, .getUsers, .getMe:
+        case .getCustomers, .getProjects, .getActivities, .getTimesheet, .deleteTimesheet(_), .getTeams, .getUsers, .getMe:
             return .requestPlain
-        case .getTimesheets(_):
+        case .getTimesheets:
             return .requestParameters(parameters: parameters, encoding: URLEncoding.queryString)
         default:
             return .requestParameters(parameters: parameters, encoding: JSONEncoding.default)
@@ -65,6 +66,8 @@ extension KimaiAPI: Moya.TargetType {
             
         case .getTimesheets, .insertTimesheet(_):
             return "/timesheets"
+        case .getTimesheet(let id):
+            return "/timesheets/\(id)"
         case .updateTimesheet(let timesheet):
             return "/timesheets/\(timesheet.id)"
         case .deleteTimesheet(let id):
@@ -86,7 +89,7 @@ extension KimaiAPI: Moya.TargetType {
     
     public var method: Moya.Method {
         switch self {
-        case .getCustomers, .getProjects, .getActivities, .getTimesheets(_), .getTeams, .getUsers, .getMe:
+        case .getCustomers, .getProjects, .getActivities, .getTimesheets, .getTimesheet, .getTeams, .getUsers, .getMe:
             return .get
         case .insertTimesheet(_), .insertProject(_), .insertCustomer(_), .insertActivity(_):
             return .post
@@ -99,13 +102,18 @@ extension KimaiAPI: Moya.TargetType {
     
     var parameters: [String: Any] {
         switch self {
-        case .getProjects, .getCustomers, .getActivities, .deleteTimesheet(_), .getTeams, .getUsers, .getMe:
+        case .getProjects, .getCustomers, .getActivities, .getTimesheet, .deleteTimesheet(_), .getTeams, .getUsers, .getMe:
             return [:]
-        case .getTimesheets(let page):
-            return [
+        case let .getTimesheets(page, cursor):
+            var result: [String: Any] = [
                 "page": page,
+                "size": 500,
+                "orderBy": "id",
+                "order": "ASC",
                 "user": "all"
             ]
+            if let cursor = cursor { result["modified_after"] = cursor }
+            return result
         case .insertTimesheet(let timesheet), .updateTimesheet(let timesheet):
             return [
                 "project": timesheet.project,
@@ -119,7 +127,7 @@ extension KimaiAPI: Moya.TargetType {
                 "name": project.name,
                 "customer": project.customer,
                 "globalActivities": project.globalActivities,
-                "visible": true,
+                "visible": project.visible,
             ]
             
         case .insertCustomer(let customer), .updateCustomer(let customer):
@@ -136,6 +144,7 @@ extension KimaiAPI: Moya.TargetType {
         case .insertActivity(let activity), .updateActivity(let activity):
             return [
                 "name": activity.name,
+                "project": activity.project as Any,
                 "color": activity.color as Any,
                 "visible": activity.visible
             ]
@@ -152,15 +161,10 @@ extension KimaiAPI: Moya.TargetType {
     }
     
     
-    var validate: Bool {
-        switch self {
-        default:
-            return true
-        }
-    }
+    // RequestService validates every HTTP status before decoding.
 }
 
 
 extension KimaiAPI {
-    static var server =  URL(string: "https://time.manuelselch.de/api")!
+    static let server = URL(string: "https://unconfigured.invalid/api")!
 }

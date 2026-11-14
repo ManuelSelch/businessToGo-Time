@@ -4,7 +4,7 @@ import OfflineSyncServices
 import KimaiCore
 
 struct KimaiProjectService {
-    static var live: RecordService<KimaiProject> = .init(
+    static var live: RecordService<KimaiProject> { .init(
         repository: .init("kimai_projects"),
         requestService: RequestService.live(
             fetchMethod: {KimaiAPI.getProjects},
@@ -12,9 +12,8 @@ struct KimaiProjectService {
             updateMethod: KimaiAPI.updateProject,
             deleteMethod: nil
         )
-        // keyMapping: KeyMappingTable.shared
-    )
-    static var  mock: RecordService<KimaiProject> = .init(
+    ) }
+    static var mock: RecordService<KimaiProject> { .init(
         repository: .init("kimai_projects"),
         requestService: RequestService.mock(
             fetchMethod: {KimaiAPI.getProjects},
@@ -22,7 +21,6 @@ struct KimaiProjectService {
             updateMethod: KimaiAPI.updateProject,
             deleteMethod: nil
         )
-        // keyMapping: KeyMappingTable.shared
-    )
+    ) }
 }
 

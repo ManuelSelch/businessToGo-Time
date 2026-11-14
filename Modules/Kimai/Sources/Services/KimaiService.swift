@@ -1,7 +1,5 @@
 import Foundation
-import Combine
 import Moya
-import SQLite
 import Dependencies
 
 import OfflineSyncCore
@@ -9,18 +7,6 @@ import OfflineSyncServices
 
 import NetworkFoundation
 import KimaiCore
-import CommonCore
-
-// Customers -> Projects -> Activities -> Timesheets
-extension KeyMappingTable {
-    static let shared = KeyMappingTable(
-        relationships: [
-            "kimai_projects": [("customer", "kimai_customers")],
-            "kimai_activities": [("project", "kimai_projects")],
-            "kimai_timesheets": [("project", "kimai_projects"), ("activity", "kimai_activities")]
-        ]
-    )
-}
 
 public class KimaiService {
     public var customers: KimaiCustomerService
@@ -31,6 +17,9 @@ public class KimaiService {
     
     private var user: String = ""
     private var token: String = ""
+    private var configured = false
+    private let syncCoordinator = KimaiSyncCoordinator()
+    @Dependency(\.database) private var database
     
     init(
         customers: KimaiCustomerService,
@@ -44,61 +33,112 @@ public class KimaiService {
         self.timesheets = timesheets
         self.activities = activities
         self.users = users
-
-        let authPlugin = KimaiAuthPlugin({self.user}, {self.token})
-        customers.setPlugins([authPlugin])
-        projects.setPlugins([authPlugin])
-        timesheets.setPlugins([authPlugin])
-        activities.setPlugins([authPlugin])
-        users.setPlugins([authPlugin])
     }
     
     public func setAuth(username: String, password: String) {
+        invalidateSync()
         self.user = username
         self.token = password
     }
     
-    public func login(server: String) async throws -> Bool {
-        if let url = URL(string: server+"/api") {
-            KimaiAPI.server = url
-        } else {
-            throw NetworkError.urlDecodeFailed
+    public func invalidateSync() {
+        configured = false
+        syncCoordinator.invalidate()
+    }
+
+    public func login(server: String) throws -> Bool {
+        guard let url = URL(string: server.trimmingCharacters(in: .whitespacesAndNewlines)),
+              let scheme = url.scheme, ["https", "http"].contains(scheme),
+              url.host != nil, url.user == nil, url.password == nil,
+              url.query == nil, url.fragment == nil else { throw NetworkError.urlDecodeFailed }
+        invalidateSync()
+        let baseURL = url.appendingPathComponent("api")
+        guard let db = database.connection else { throw ServiceError.databaseUnavailable }
+        let identity = baseURL.absoluteString + "\n" + user
+        try db.transaction {
+            try db.execute("CREATE TABLE IF NOT EXISTS kimai_account_binding (id INTEGER PRIMARY KEY, identity TEXT NOT NULL)")
+            if let existing = try db.scalar("SELECT identity FROM kimai_account_binding WHERE id = 1") as? String {
+                guard existing == identity else { throw ServiceError.accountChanged }
+            } else {
+                try db.run("INSERT INTO kimai_account_binding (id, identity) VALUES (1, ?)", identity)
+            }
         }
-        
-        // let success = (await users.fetch()) != []
+        // Fresh instances prevent account changes from mutating in-flight providers.
+        if DependencyValues.mode == .live {
+            customers = .live
+            projects = KimaiProjectService.live
+            activities = KimaiActivityService.live
+            timesheets = KimaiTimesheetService.live
+            users = KimaiUserService.live
+        } else {
+            customers = .mock
+            projects = KimaiProjectService.mock
+            activities = KimaiActivityService.mock
+            timesheets = KimaiTimesheetService.mock
+            users = KimaiUserService.mock
+        }
+        let plugin = KimaiAuthPlugin(user: user, token: token, baseURL: baseURL)
+        customers.setPlugins([plugin])
+        projects.setPlugins([plugin])
+        activities.setPlugins([plugin])
+        timesheets.setPlugins([plugin])
+        users.setPlugins([plugin])
+        configured = true
         return true
     }
-    
-    public func save(_ model: any TableProtocol) {
+
+    public func makeSyncOperation() -> () async throws -> Void {
+        let customers = customers
+        let projects = projects
+        let activities = activities
+        let users = users
+        let timesheets = timesheets
+        let configured = configured
+        return syncCoordinator.operation { check in
+            guard configured else { throw ServiceError.accountChanged }
+            try check()
+            _ = try await customers.sync()
+            try check()
+            _ = try await projects.sync()
+            try check()
+            _ = try await activities.sync()
+            try check()
+            _ = try await users.sync()
+            try check()
+            _ = try await timesheets.sync()
+        }
+    }
+
+    public func save(_ model: any TableProtocol) throws {
         if let customer = model as? KimaiCustomer {
             if(customer.id == -1) {
-                customers.createCustomer(customer)
+                try customers.createCustomer(customer)
             } else {
-                customers.updateCustomer(customer)
+                try customers.updateCustomer(customer)
             }
         } else if let project = model as? KimaiProject {
             if(project.id == -1) {
-                projects.create(project)
+                try projects.create(project)
             } else {
-                projects.update(project)
+                try projects.update(project)
             }
         } else if let timesheet = model as? KimaiTimesheet {
             if(timesheet.id == -1) {
-                timesheets.create(timesheet)
+                try timesheets.create(timesheet)
             } else {
-                timesheets.update(timesheet)
+                try timesheets.update(timesheet)
             }
         } else if let activity = model as? KimaiActivity {
             if(activity.id == -1) {
-                activities.create(activity)
+                try activities.create(activity)
             } else {
-                activities.update(activity)
+                try activities.update(activity)
             }
         } else if let user = model as? KimaiUser {
             if(user.id == -1) {
-                users.create(user)
+                try users.create(user)
             } else {
-                users.update(user)
+                try users.update(user)
             }
         }
     }
@@ -122,33 +162,19 @@ extension KimaiService {
     )
 }
 
-class AuthProvider {
-    var user: String
-    var token: String
-    
-    init(user: String, token: String) {
-        self.user = user
-        self.token = token
-    }
-    
-    
-}
-
 struct KimaiAuthPlugin: PluginType {
-    let getUser: () -> String
-    let getToken: () -> String
-    
-    init(_ getUser: @escaping () -> String, _ getToken: @escaping () -> String) {
-        self.getUser = getUser
-        self.getToken = getToken
-    }
-    
-    
+    let user: String
+    let token: String
+    let baseURL: URL
+
     func prepare(_ request: URLRequest, target: TargetType) -> URLRequest {
         var request = request
-        request.addValue(getUser(), forHTTPHeaderField: "X-AUTH-USER")
-        request.addValue(getToken(), forHTTPHeaderField: "X-AUTH-TOKEN")
-        // request.addValue("Bearer " + token, forHTTPHeaderField: "Authorization")
+        let path = target.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        var components = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
+        components.percentEncodedQuery = request.url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false)?.percentEncodedQuery }
+        request.url = components.url
+        request.setValue(user, forHTTPHeaderField: "X-AUTH-USER")
+        request.setValue(token, forHTTPHeaderField: "X-AUTH-TOKEN")
         return request
     }
 }
