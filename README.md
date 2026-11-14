@@ -4,7 +4,7 @@ Time-tracking app in the **businessToGo** product family, built with SwiftUI for
 
 ## Product identity
 
-- App display name: **businessToGo Time**. Repository/checkout folder: **businessToGo-Time**. Xcode project and shared scheme: **businessToGoTime**.
+- App display name: **businessToGo Time**. Checkout folder: **businessToGo Time**. Repository: **businessToGo-Time**. Xcode project and shared scheme: **businessToGoTime**.
 - Open [businessToGoTime.xcodeproj](businessToGoTime.xcodeproj). GitHub repository: [ManuelSelch/businessToGo-Time](https://github.com/ManuelSelch/businessToGo-Time).
 - Bundle identifiers (`de.selch.businessToGo` and its existing extensions) and account database filenames (`businessToGo_<identifier>.sqlite`) remain unchanged; this is a rename, not a new installed app.
 
